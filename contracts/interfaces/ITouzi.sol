@@ -22,8 +22,8 @@ interface ITouzi {
     struct Prize {
         address token;              // ERC20 token address
         uint256 value;              // value per share
-        uint128 share;              // total share
-        uint128 probability;        // 100% = 1e9, 1% = 1e7
+        uint256 share;              // total share
+        uint256 probability;        // 100% = 1e18, 1% = 1e16
     }
 
     struct PooConfig {
