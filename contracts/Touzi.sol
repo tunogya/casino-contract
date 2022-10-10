@@ -1,9 +1,10 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 import "@api3/airnode-protocol/contracts/rrp/requesters/RrpRequesterV0.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/ITouzi.sol";
 
-contract Touzi is RrpRequesterV0, ITouzi {
+contract Touzi is RrpRequesterV0, Ownable, ITouzi {
     event RequestedUint256(bytes32 indexed requestId);
     event ReceivedUint256(bytes32 indexed requestId, uint256 response);
     event RequestedUint256Array(bytes32 indexed requestId, uint256 size);

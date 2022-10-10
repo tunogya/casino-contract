@@ -6,55 +6,60 @@ interface ITouzi {
     // Platform functions
     // -------------------------------------------------------------------
 
-    struct PlatformConfig {
-        address payment;            // Address to receive payments
-        address admin;              // Admin address of the platform
-        uint256 feeRate;            // 0.1% = 1e15, 1% = 1e16, 10% = 1e17
-    }
-
     // get platform config
-    function getPlatformConfig() external view returns (PlatformConfig memory);
+    function getPlatformFeeRate() external view returns (uint256);
 
     // set platform config
-    function setPlatformConfig(PlatformConfig memory config) external;
+    function setPlatformFeeRate(uint256 feeRate) external;
 
-    // withdraw all platform fee
-    function withdrawPlatformFee() external;
-
+    // withdraw all platform fee by token
+    function withdrawPlatformFee(address token) external;
 
     // -------------------------------------------------------------------
     // Merchant functions
     // -------------------------------------------------------------------
-    struct Machine {
 
+    struct Prize {
+        address token;              // ERC20 token address
+        uint256 value;              // value per share
+        uint128 share;              // total share
+        uint128 probability;        // 100% = 1e9, 1% = 1e7
     }
 
-    // Create a new Channel, any user can create a channel
-    // @return channelID
-    function createChannel() external returns (uint256);
+    struct PooConfig {
+        address paymentToken;       // payment token address
+        uint256 singleDrawPrice;    // single draw price
+        uint256 batchDrawQuota;     // batch draw quota
+        uint256 batchDrawPrice;     // batch draw price
+        Prize[] prizeArray;         // prize array
+    }
 
-    // Delete a channel, only the channel owner can delete it
-    // All machines in the channel will be deleted
-    function deleteChannel(uint256 _channelId) external;
+    // Create a new Pool, only the room owner can create a pool
+    function createPool() external;
 
-    // Create a new Machine, only the channel owner can create a machine
-    function createMachine(uint256 _channelId, Machine config) external;
+    // Delete a Pool, only the room owner can delete it
+    function deletePool(uint256 _poolId) external;
 
-    // Delete a Machine, only the channel owner can delete it
-    function deleteMachine(uint256 _channelId, uint256 _machineId) external;
+    function batchDeletePool(uint256[] _poolIds) external;
 
-    // Get Machine Info
-    // @return machine info
-    function getMachineInfo(uint256 _channelId, uint256 _machineId) external view returns (Machine memory);
+    function setPoolConfig(uint256 _poolId, PooConfig memory config) external;
 
-    // Withdraw all channel fee
-    function withdrawMachineFee(uint256 _channelId) external;
+    // Get Pool config
+    // @return pool config
+    function getPoolConfig(uint256 _poolId) external view returns (PooConfig memory);
 
+    // Withdraw Pool fee
+    function withdrawPoolFee(uint256 _poolId) external;
+
+    function batchWithdrawPoolFee(uint256[] _poolIds) external;
 
     // -------------------------------------------------------------------
     // Player functions
     // -------------------------------------------------------------------
 
     // Roll, will makeRequestUint256()
-    function roll(uint256 _channelId, uint256 _machineId) external;
+    function draw(uint256 _roomId, uint256 _poolId) external;
+
+    // Batch roll, will makeRequestUint256Array()
+    function batchDraw(uint256 _roomId, uint256 _poolId) external;
 }

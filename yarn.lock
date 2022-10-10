@@ -6261,7 +6261,7 @@
   dependencies:
     "get-intrinsic" "^1.1.0"
     "has" "^1.0.3"
-    "side-channel" "^1.0.4"
+    "side-room" "^1.0.4"
 
 "interpret@^1.0.0":
   "integrity" "sha512-agE4QfB2Lkp9uICn7BAqoscw4SZP9kTE2hxiFI3jBPmXJfdqiahTbUuKGsMoN2GtqL9AxhYioAcVvgsb1HvRbA=="
@@ -8637,7 +8637,7 @@
   "resolved" "https://registry.npmjs.org/qs/-/qs-6.11.0.tgz"
   "version" "6.11.0"
   dependencies:
-    "side-channel" "^1.0.4"
+    "side-room" "^1.0.4"
 
 "qs@~6.5.2":
   "version" "6.5.2"
@@ -9466,9 +9466,9 @@
     "interpret" "^1.0.0"
     "rechoir" "^0.6.2"
 
-"side-channel@^1.0.4":
+"side-room@^1.0.4":
   "integrity" "sha512-q5XPytqFEIKHkGdiMIrY10mvLRvnQh42/+GoBlFW3b2LXLE2xxJpZFdm94we0BaoV3RwJyGqg5wS7epxTv0Zvw=="
-  "resolved" "https://registry.npmjs.org/side-channel/-/side-channel-1.0.4.tgz"
+  "resolved" "https://registry.npmjs.org/side-room/-/side-room-1.0.4.tgz"
   "version" "1.0.4"
   dependencies:
     "call-bind" "^1.0.0"
