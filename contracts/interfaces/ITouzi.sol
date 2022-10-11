@@ -14,19 +14,19 @@ interface ITouzi {
     // Merchant functions
     // -------------------------------------------------------------------
 
-    struct Prize {
-        address token;              // ERC20 token address
-        uint256 value;              // value per draw
-        uint256 probability;        // 100% = 1e18, 1% = 1e16
-        uint256 share;              // Every time you draw a new prize, the value will be reduced by 1
-    }
+//    struct Prize {
+//        address token;              // ERC20 token address
+//        uint256 value;              // value per draw
+//        uint256 probability;        // 100% = 1e18, 1% = 1e16
+//        uint256 share;              // Every time you draw a new prize, the value will be reduced by 1
+//    }
 
-    struct PooConfig {
+    struct PoolConfig {
         address paymentToken;       // payment token address
         uint256 singleDrawPrice;    // single draw price
         uint256 batchDrawSize;      // batch draw size
         uint256 batchDrawPrice;     // batch draw price
-        Prize[] prizeArray;         // prize array
+//        Prize[] prizeArray;         // prize array
     }
 
     struct PoolBillboard {
@@ -45,14 +45,12 @@ interface ITouzi {
 
     // @dev When paymentToken updated, the totalFeeValue will be reset to 0 and auto withdraw all fee to the owner of the pool
     // If update the pool share, will deposit the new share to the pool, new share >= old share
-    function setPoolConfig(uint256 _poolId, PooConfig memory config) external;
-
-    function getPoolConfig(uint256 _poolId) external view returns (PooConfig memory);
+    function setPoolConfig(uint256 _poolId, PoolConfig memory config) external;
 
     // Withdraw Pool fee
     function withdrawPoolFee(uint256 _poolId) external;
 
-    function batchWithdrawPoolFee(uint256[] _poolIds) external;
+    function batchWithdrawPoolFee(uint256[] memory _poolIds) external;
 
     // -------------------------------------------------------------------
     // Player functions

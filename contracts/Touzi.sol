@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./interfaces/ITouzi.sol";
 
-contract Touzi is RrpRequesterV0, Ownable, ITouzi {
+contract Touzi is RrpRequesterV0, ITouzi, Ownable {
     using Counters for Counters.Counter;
 
     event RequestedUint256(bytes32 indexed requestId);
@@ -36,9 +36,9 @@ contract Touzi is RrpRequesterV0, Ownable, ITouzi {
     // poolId => pool owner address
     mapping(uint256 => address) public poolOwnerMap;
     // poolId => poolConfig
-    mapping(uint256 => uint256) public pooConfigMap;
+    mapping(uint256 => PoolConfig) public poolConfigMap;
     // poolId => PoolBillboard
-    mapping(uint256 => uint256) public poolBillboardMap;
+    mapping(uint256 => PoolBillboard) public poolBillboardMap;
     // token => amount, platform fee
     mapping(address => uint256) public platformFeeMap;
     // requestId => DrawRequest
@@ -104,8 +104,8 @@ contract Touzi is RrpRequesterV0, Ownable, ITouzi {
 
     // @dev When paymentToken updated, the totalFeeValue will be reset to 0 and auto withdraw all fee to the owner of the pool
     // If update the pool share, will deposit the new share to the pool, new share >= old share
-    function setPoolConfig(uint256 _poolId, PooConfig memory config) onlyPoolOwner(_poolId) external {
-        pooConfigMap[_poolId] = config;
+    function setPoolConfig(uint256 _poolId, PoolConfig memory config) onlyPoolOwner(_poolId) external {
+        poolConfigMap[_poolId] = config;
     }
 
     // Withdraw Pool fee
@@ -114,15 +114,15 @@ contract Touzi is RrpRequesterV0, Ownable, ITouzi {
     }
 
     // Batch withdraw Pool fee
-    function batchWithdrawPoolFee(uint256[] _poolIds) external {
+    function batchWithdrawPoolFee(uint256[] memory _poolIds) external {
         for (uint256 i = 0; i < _poolIds.length; i++) {
             _withdrawPoolFee(_poolIds[i]);
         }
     }
 
     function _withdrawPoolFee(uint256 _poolId) onlyPoolOwner(_poolId) internal {
-        address paymentToken = pooConfigMap[_poolId].paymentToken;
-        uint256 totalFeeValue = PoolBillboard[_poolId].totalFeeValue;
+        address paymentToken = poolConfigMap[_poolId].paymentToken;
+        uint256 totalFeeValue = poolBillboardMap[_poolId].totalFeeValue;
         ERC20(paymentToken).transfer(poolOwnerMap[_poolId], totalFeeValue);
 
         emit WithdrawPoolFee(_poolId, paymentToken, totalFeeValue);
@@ -143,12 +143,12 @@ contract Touzi is RrpRequesterV0, Ownable, ITouzi {
     // -------------------------------------------------------------------
 
     function draw(uint256 _poolId) external {
-        PooConfig memory config = pooConfigMap[_poolId];
+        PoolConfig memory config = poolConfigMap[_poolId];
 
         ERC20(config.paymentToken).transferFrom(msg.sender, address(this), config.singleDrawPrice);
 
         uint256 platformFee = config.singleDrawPrice * feeRate / 1e18;
-        PoolBillboard[_poolId].totalFeeValue += (config.singleDrawPrice - platformFee);
+        poolBillboardMap[_poolId].totalFeeValue += (config.singleDrawPrice - platformFee);
         poolBillboardMap[_poolId].totalDrawCount += 1;
         platformFeeMap[config.paymentToken] += platformFee;
 
@@ -167,12 +167,12 @@ contract Touzi is RrpRequesterV0, Ownable, ITouzi {
     }
 
     function batchDraw(uint256 _poolId) external {
-        PooConfig memory config = pooConfigMap[_poolId];
+        PoolConfig memory config = poolConfigMap[_poolId];
 
         ERC20(config.paymentToken).transferFrom(msg.sender, address(this), config.batchDrawPrice);
 
         uint256 platformFee = config.batchDrawPrice * feeRate / 1e18;
-        PoolBillboard[_poolId].totalFeeValue += (config.batchDrawPrice - platformFee);
+        poolBillboardMap[_poolId].totalFeeValue += (config.batchDrawPrice - platformFee);
         poolBillboardMap[_poolId].totalDrawCount += config.batchDrawSize;
         platformFeeMap[config.paymentToken] += platformFee;
 
