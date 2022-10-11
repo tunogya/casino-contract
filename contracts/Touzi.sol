@@ -4,16 +4,24 @@ pragma solidity 0.8.9;
 import "@api3/airnode-protocol/contracts/rrp/requesters/RrpRequesterV0.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./interfaces/ITouzi.sol";
 
 contract Touzi is RrpRequesterV0, Ownable, ITouzi {
+    using Counters for Counters.Counter;
+
     event RequestedUint256(bytes32 indexed requestId);
     event ReceivedUint256(bytes32 indexed requestId, uint256 response);
     event RequestedUint256Array(bytes32 indexed requestId, uint256 size);
     event ReceivedUint256Array(bytes32 indexed requestId, uint256[] response);
+    event SetFeeRate(uint256 feeRate);
+    event WithdrawPlatformFee(address indexed token, uint256 amount);
+    event WithdrawPoolFee(uint256 indexed poolId, address token, uint256 amount);
+    event Draw(uint256 indexed poolId, bytes32 requestId);
+    event BatchDraw(uint256 indexed poolId, uint256 size, bytes32 requestId);
 
     // Platform fee rate
-    uint256 private feeRate;
+    uint256 public feeRate;
 
     // These variables can also be declared as `constant`/`immutable`.
     // However, this would mean that they would not be updatable.
@@ -25,12 +33,18 @@ contract Touzi is RrpRequesterV0, Ownable, ITouzi {
     bytes32 public endpointIdUint256Array;
     address public sponsorWallet;
 
-    mapping (uint256 => address) public poolOwner;
+    // poolId => pool owner address
+    mapping(uint256 => address) public poolOwnerMap;
+    // poolId => poolConfig
+    mapping(uint256 => uint256) public pooConfigMap;
+    // poolId => PoolBillboard
+    mapping(uint256 => uint256) public poolBillboardMap;
+    // token => amount, platform fee
+    mapping(address => uint256) public platformFeeMap;
+    // requestId => DrawRequest
+    mapping(bytes32 => DrawRequest) public drawRequestMap;
 
-    using Counters for Counters.Counter;
-    Counters.Counter private _poolIdCounter;
-
-    mapping(bytes32 => bool) public expectingRequestWithIdToBeFulfilled;
+    Counters.Counter private poolIdCounter;
 
     /// @dev RrpRequester sponsors itself, meaning that it can make requests
     /// that will be fulfilled by its sponsor wallet. See the Airnode protocol
@@ -39,10 +53,6 @@ contract Touzi is RrpRequesterV0, Ownable, ITouzi {
     constructor(address _airnodeRrp) RrpRequesterV0(_airnodeRrp) {}
 
     /// @notice Sets parameters used in requesting QRNG services
-    /// @dev No access control is implemented here for convenience. This is not
-    /// secure because it allows the contract to be pointed to an arbitrary
-    /// Airnode. Normally, this function should only be callable by the "owner"
-    /// or not exist in the first place.
     /// @param _airnode Airnode address
     /// @param _endpointIdUint256 Endpoint ID used to request a `uint256`
     /// @param _endpointIdUint256Array Endpoint ID used to request a `uint256[]`
@@ -52,9 +62,7 @@ contract Touzi is RrpRequesterV0, Ownable, ITouzi {
         bytes32 _endpointIdUint256,
         bytes32 _endpointIdUint256Array,
         address _sponsorWallet
-    ) external {
-        // Normally, this function should be protected, as in:
-        // require(msg.sender == owner, "Sender not owner");
+    ) onlyOwner external {
         airnode = _airnode;
         endpointIdUint256 = _endpointIdUint256;
         endpointIdUint256Array = _endpointIdUint256Array;
@@ -65,47 +73,39 @@ contract Touzi is RrpRequesterV0, Ownable, ITouzi {
     // Platform functions
     // -------------------------------------------------------------------
 
-    // get platform config
-    function getPlatformFeeRate() external view returns (uint256) {
-        return feeRate;
-    }
-
-    // set platform config, only owner can call
+    // set platform fee rate, only owner can call
     function setPlatformFeeRate(uint256 _feeRate) onlyOwner external {
+        require(_feeRate <= 1e18, "Touzi: feeRate must <= 1e18");
         feeRate = _feeRate;
+
+        emit SetFeeRate(_feeRate);
     }
 
     // withdraw all platform fee by token
-    function withdrawPlatformFee(address token) external {
-        // TODO, withdraw all platform fee by token
-        // Revenue from the platform needs to be recorded
+    function withdrawPlatformFee(address token) onlyOwner external {
+        require(token != address(0), "Touzi: token is zero address");
+        uint256 amount = platformFeeMap[token];
+        platformFeeMap[token] = 0;
+        ERC20(token).transfer(msg.sender, amount);
+
+        emit WithdrawPlatformFee(token, amount);
     }
 
     // -------------------------------------------------------------------
     // Merchant functions
     // -------------------------------------------------------------------
 
-    // Create a new Pool, only the room owner can create a pool
+    // Create a new Pool
     function createPool() external returns (uint256 poolId) {
-        poolId = _poolIdCounter.current();
-        _poolIdCounter.increment();
-    }
-
-    // Delete a Pool, only the room owner can delete it
-    function deletePool(uint256 _poolId) external {
-        _deletePool(_poolId);
-    }
-
-    function batchDeletePool(uint256[] _poolIds) external {
-        for (uint256 i = 0; i < _poolIds.length; i++) {
-            _deletePool(_poolIds[i]);
-        }
+        poolId = poolIdCounter.current();
+        poolIdCounter.increment();
+        poolOwnerMap[poolId] = msg.sender;
     }
 
     // @dev When paymentToken updated, the totalFeeValue will be reset to 0 and auto withdraw all fee to the owner of the pool
     // If update the pool share, will deposit the new share to the pool, new share >= old share
     function setPoolConfig(uint256 _poolId, PooConfig memory config) onlyPoolOwner(_poolId) external {
-
+        pooConfigMap[_poolId] = config;
     }
 
     // Withdraw Pool fee
@@ -120,27 +120,21 @@ contract Touzi is RrpRequesterV0, Ownable, ITouzi {
         }
     }
 
-    function _deletePool(uint256 _poolId) onlyPoolOwner(_poolId) internal {
-        // TODO, delete a pool from the platform
-    }
-
-    /**
-     * @dev Returns the address of the current owner.
-     */
-    function getPoolOwner(uint256 _poolId) public view virtual returns (address) {
-        // TODO, get owner of pool
-        return _owner;
-    }
-
     function _withdrawPoolFee(uint256 _poolId) onlyPoolOwner(_poolId) internal {
-        // TODO, withdraw pool fee
+        address paymentToken = pooConfigMap[_poolId].paymentToken;
+        uint256 totalFeeValue = PoolBillboard[_poolId].totalFeeValue;
+        ERC20(paymentToken).transfer(poolOwnerMap[_poolId], totalFeeValue);
+
+        emit WithdrawPoolFee(_poolId, paymentToken, totalFeeValue);
     }
 
     /**
-     * @dev Throws if called by any account other than the owner of pool.
+     * @dev Throws if called by any account other than the owner of pool. Checked by poolId.
+     * @param _poolId The poolId of the pool
      */
     modifier onlyPoolOwner(uint256 _poolId) {
-        require(getPoolOwner(_poolId) == _msgSender(), "Ownable: caller is not the owner of pool");
+        require(_poolId < poolIdCounter.current(), "Touzi: poolId not exist");
+        require(poolOwnerMap[_poolId] == _msgSender(), "Touzi: caller is not the owner of pool");
         _;
     }
 
@@ -148,8 +142,16 @@ contract Touzi is RrpRequesterV0, Ownable, ITouzi {
     // Player functions
     // -------------------------------------------------------------------
 
-    // Roll, will makeRequestUint256()
-    function draw(uint256 _roomId, uint256 _poolId) external {
+    function draw(uint256 _poolId) external {
+        PooConfig memory config = pooConfigMap[_poolId];
+
+        ERC20(config.paymentToken).transferFrom(msg.sender, address(this), config.singleDrawPrice);
+
+        uint256 platformFee = config.singleDrawPrice * feeRate / 1e18;
+        PoolBillboard[_poolId].totalFeeValue += (config.singleDrawPrice - platformFee);
+        poolBillboardMap[_poolId].totalDrawCount += 1;
+        platformFeeMap[config.paymentToken] += platformFee;
+
         bytes32 requestId = airnodeRrp.makeFullRequest(
             airnode,
             endpointIdUint256,
@@ -159,14 +161,21 @@ contract Touzi is RrpRequesterV0, Ownable, ITouzi {
             this.fulfillUint256.selector,
             ""
         );
-        expectingRequestWithIdToBeFulfilled[requestId] = true;
-        emit RequestedUint256(requestId);
+        drawRequestMap[requestId] = DrawRequest(true, _poolId);
+
+        emit Draw(_poolId, requestId);
     }
 
-    // Batch roll, will makeRequestUint256Array()
-    function batchDraw(uint256 _roomId, uint256 _poolId) external {
-        // TODO: batch draw size
-        uint256 size = 5;
+    function batchDraw(uint256 _poolId) external {
+        PooConfig memory config = pooConfigMap[_poolId];
+
+        ERC20(config.paymentToken).transferFrom(msg.sender, address(this), config.batchDrawPrice);
+
+        uint256 platformFee = config.batchDrawPrice * feeRate / 1e18;
+        PoolBillboard[_poolId].totalFeeValue += (config.batchDrawPrice - platformFee);
+        poolBillboardMap[_poolId].totalDrawCount += config.batchDrawSize;
+        platformFeeMap[config.paymentToken] += platformFee;
+
         bytes32 requestId = airnodeRrp.makeFullRequest(
             airnode,
             endpointIdUint256Array,
@@ -175,10 +184,10 @@ contract Touzi is RrpRequesterV0, Ownable, ITouzi {
             address(this),
             this.fulfillUint256Array.selector,
         // Using Airnode ABI to encode the parameters
-            abi.encode(bytes32("1u"), bytes32("size"), size)
+            abi.encode(bytes32("1u"), bytes32("size"), config.batchDrawSize)
         );
-        expectingRequestWithIdToBeFulfilled[requestId] = true;
-        emit RequestedUint256Array(requestId, size);
+        drawRequestMap[requestId] = DrawRequest(true, _poolId);
+        emit RequestedUint256Array(requestId, config.batchDrawSize);
     }
 
     /// @notice Called by the Airnode through the AirnodeRrp contract to
@@ -194,10 +203,10 @@ contract Touzi is RrpRequesterV0, Ownable, ITouzi {
     onlyAirnodeRrp
     {
         require(
-            expectingRequestWithIdToBeFulfilled[requestId],
+            drawRequestMap[requestId].isWaitingFulfill,
             "Request ID not known"
         );
-        expectingRequestWithIdToBeFulfilled[requestId] = false;
+        drawRequestMap[requestId].isWaitingFulfill = false;
         uint256 qrngUint256 = abi.decode(data, (uint256));
         // Do what you want with `qrngUint256` here...
         emit ReceivedUint256(requestId, qrngUint256);
@@ -212,10 +221,10 @@ contract Touzi is RrpRequesterV0, Ownable, ITouzi {
     onlyAirnodeRrp
     {
         require(
-            expectingRequestWithIdToBeFulfilled[requestId],
+            drawRequestMap[requestId].isWaitingFulfill,
             "Request ID not known"
         );
-        expectingRequestWithIdToBeFulfilled[requestId] = false;
+        drawRequestMap[requestId].isWaitingFulfill = false;
         uint256[] memory qrngUint256Array = abi.decode(data, (uint256[]));
         // Do what you want with `qrngUint256Array` here...
         emit ReceivedUint256Array(requestId, qrngUint256Array);

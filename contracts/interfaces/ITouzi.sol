@@ -6,12 +6,7 @@ interface ITouzi {
     // Platform functions
     // -------------------------------------------------------------------
 
-    // get platform config
-    function getPlatformFeeRate() external view returns (uint256);
-
-    // set platform config
     function setPlatformFeeRate(uint256 feeRate) external;
-
     // withdraw all platform fee by token
     function withdrawPlatformFee(address token) external;
 
@@ -36,23 +31,21 @@ interface ITouzi {
 
     struct PoolBillboard {
         uint256 totalDrawCount;     // total draw count
-        uint256 totalDrawAmount;    // total draw amount
-        uint256 totalFeeValue;     // total fee amount. Every withdrawal will be deducted from the total amount
+        uint256 totalWinCount;      // total win count
+        uint256 totalFeeValue;      // total fee amount. Every withdrawal will be deducted from the total amount, if changed the payment token, set to 0
     }
 
-    // Create a new Pool, only the room owner can create a pool
+    struct DrawRequest {
+        bool isWaitingFulfill;     // is waiting fulfill
+        uint256 poolId;             // pool id
+    }
+
+    // Create a new Pool
     function createPool() external returns (uint256 poolId);
-
-    // Delete a Pool, only the room owner can delete it
-    function deletePool(uint256 _poolId) external;
-
-    function batchDeletePool(uint256[] _poolIds) external;
 
     // @dev When paymentToken updated, the totalFeeValue will be reset to 0 and auto withdraw all fee to the owner of the pool
     // If update the pool share, will deposit the new share to the pool, new share >= old share
     function setPoolConfig(uint256 _poolId, PooConfig memory config) external;
-
-    function getPoolOwner(uint256 _poolId) public view virtual returns (address);
 
     function getPoolConfig(uint256 _poolId) external view returns (PooConfig memory);
 
@@ -65,9 +58,7 @@ interface ITouzi {
     // Player functions
     // -------------------------------------------------------------------
 
-    // Draw, will makeRequestUint256()
-    function draw(uint256 _roomId, uint256 _poolId) external;
+    function draw(uint256 _poolId) external;
 
-    // Batch draw, will makeRequestUint256Array()
-    function batchDraw(uint256 _roomId, uint256 _poolId) external;
+    function batchDraw(uint256 _poolId) external;
 }
