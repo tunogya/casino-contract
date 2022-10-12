@@ -14,19 +14,13 @@ interface ITouzi {
     // Merchant functions
     // -------------------------------------------------------------------
 
-//    struct Prize {
-//        address token;              // ERC20 token address
-//        uint256 value;              // value per draw
-//        uint256 probability;        // 100% = 1e18, 1% = 1e16
-//        uint256 share;              // Every time you draw a new prize, the value will be reduced by 1
-//    }
-
     struct PoolConfig {
         address paymentToken;       // payment token address
         uint256 singleDrawPrice;    // single draw price
         uint256 batchDrawSize;      // batch draw size
         uint256 batchDrawPrice;     // batch draw price
-//        Prize[] prizeArray;         // prize array
+        address[] prizeTokens;      // prize token address list
+        uint256[] prizeData;        // prize data list, [value, probability, share]
     }
 
     struct PoolBillboard {
