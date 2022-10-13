@@ -129,7 +129,7 @@ contract Touzi is RrpRequesterV0, ITouzi, Ownable {
         drawRequestMap[requestId] = DrawRequest(true, _poolId);
         emit BatchDraw(_poolId, 5, requestId);
     }
-    
+
     function _calculateRarePrizeProbability(uint256 _poolId, uint256 _number) internal view returns (uint256) {
         PoolConfig memory config = poolConfigMap[_poolId];
         uint256 initRare = config.rarePrizeInitRate;

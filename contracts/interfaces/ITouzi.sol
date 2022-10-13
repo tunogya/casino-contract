@@ -10,17 +10,15 @@ interface ITouzi {
         uint256 rarePrizeInitRate;      // rare prize init rate, 100% = 1e18
         uint256 rarePrizeAvgRate;       // rare prize avg rate, 100% = 1e18
         uint256 rarePrizeValue;         // rare prize value
-        uint256 rarePrizeShare;         // rare prize share
         uint256 rarePrizeMaxRP;         // rare prize max rp
         address[] normalPrizesToken;    // normal prize token addresses
         uint256[] normalPrizesValue;    // normal prize values
-        uint256[] normalPrizesShare;    // normal prize shares
         uint256[] normalPrizesRate;     // normal prize rates
     }
 
     struct DrawRequest {
-        bool isWaitingFulfill;     // is waiting fulfill
-        uint256 poolId;             // pool id
+        bool isWaitingFulfill;          // is waiting fulfill
+        uint256 poolId;                 // pool id
     }
 
     // Create a new Pool
