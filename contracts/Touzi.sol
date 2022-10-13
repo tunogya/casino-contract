@@ -14,14 +14,10 @@ contract Touzi is RrpRequesterV0, ITouzi, Ownable {
     event ReceivedUint256(bytes32 indexed requestId, uint256 response);
     event RequestedUint256Array(bytes32 indexed requestId, uint256 size);
     event ReceivedUint256Array(bytes32 indexed requestId, uint256[] response);
-    event SetFeeRate(uint256 feeRate);
-    event WithdrawPlatformFee(address indexed token, uint256 amount);
-    event WithdrawPoolFee(uint256 indexed poolId, address token, uint256 amount);
     event Draw(uint256 indexed poolId, bytes32 requestId);
     event BatchDraw(uint256 indexed poolId, uint256 size, bytes32 requestId);
-
-    // Platform fee rate
-    uint256 public feeRate;
+    event GetRarePrize(uint256 indexed poolId, address indexed user);
+    event GetNormalPrize(uint256 indexed poolId, address indexed user, address token, uint256 value);
 
     // These variables can also be declared as `constant`/`immutable`.
     // However, this would mean that they would not be updatable.
@@ -37,10 +33,8 @@ contract Touzi is RrpRequesterV0, ITouzi, Ownable {
     mapping(uint256 => address) public poolOwnerMap;
     // poolId => poolConfig
     mapping(uint256 => PoolConfig) public poolConfigMap;
-    // poolId => PoolBillboard
-    mapping(uint256 => PoolBillboard) public poolBillboardMap;
-    // token => amount, platform fee
-    mapping(address => uint256) public platformFeeMap;
+    // address => poolId => rp
+    mapping(address => mapping(uint256 => uint256)) public rpMap;
     // requestId => DrawRequest
     mapping(bytes32 => DrawRequest) public drawRequestMap;
 
@@ -70,28 +64,6 @@ contract Touzi is RrpRequesterV0, ITouzi, Ownable {
     }
 
     // -------------------------------------------------------------------
-    // Platform functions
-    // -------------------------------------------------------------------
-
-    // set platform fee rate, only owner can call
-    function setPlatformFeeRate(uint256 _feeRate) onlyOwner external {
-        require(_feeRate <= 1e18, "Touzi: feeRate must <= 1e18");
-        feeRate = _feeRate;
-
-        emit SetFeeRate(_feeRate);
-    }
-
-    // withdraw all platform fee by token
-    function withdrawPlatformFee(address token) onlyOwner external {
-        require(token != address(0), "Touzi: token is zero address");
-        uint256 amount = platformFeeMap[token];
-        platformFeeMap[token] = 0;
-        ERC20(token).transfer(msg.sender, amount);
-
-        emit WithdrawPlatformFee(token, amount);
-    }
-
-    // -------------------------------------------------------------------
     // Merchant functions
     // -------------------------------------------------------------------
 
@@ -106,26 +78,6 @@ contract Touzi is RrpRequesterV0, ITouzi, Ownable {
     // If update the pool share, will deposit the new share to the pool, new share >= old share
     function setPoolConfig(uint256 _poolId, PoolConfig memory config) onlyPoolOwner(_poolId) external {
         poolConfigMap[_poolId] = config;
-    }
-
-    // Withdraw Pool fee
-    function withdrawPoolFee(uint256 _poolId) external {
-        _withdrawPoolFee(_poolId);
-    }
-
-    // Batch withdraw Pool fee
-    function batchWithdrawPoolFee(uint256[] memory _poolIds) external {
-        for (uint256 i = 0; i < _poolIds.length; i++) {
-            _withdrawPoolFee(_poolIds[i]);
-        }
-    }
-
-    function _withdrawPoolFee(uint256 _poolId) onlyPoolOwner(_poolId) internal {
-        address paymentToken = poolConfigMap[_poolId].paymentToken;
-        uint256 totalFeeValue = poolBillboardMap[_poolId].totalFeeValue;
-        ERC20(paymentToken).transfer(poolOwnerMap[_poolId], totalFeeValue);
-
-        emit WithdrawPoolFee(_poolId, paymentToken, totalFeeValue);
     }
 
     /**
@@ -147,11 +99,6 @@ contract Touzi is RrpRequesterV0, ITouzi, Ownable {
 
         ERC20(config.paymentToken).transferFrom(msg.sender, address(this), config.singleDrawPrice);
 
-        uint256 platformFee = config.singleDrawPrice * feeRate / 1e18;
-        poolBillboardMap[_poolId].totalFeeValue += (config.singleDrawPrice - platformFee);
-        poolBillboardMap[_poolId].totalDrawCount += 1;
-        platformFeeMap[config.paymentToken] += platformFee;
-
         bytes32 requestId = airnodeRrp.makeFullRequest(
             airnode,
             endpointIdUint256,
@@ -162,7 +109,6 @@ contract Touzi is RrpRequesterV0, ITouzi, Ownable {
             ""
         );
         drawRequestMap[requestId] = DrawRequest(true, _poolId);
-
         emit Draw(_poolId, requestId);
     }
 
@@ -171,11 +117,6 @@ contract Touzi is RrpRequesterV0, ITouzi, Ownable {
 
         ERC20(config.paymentToken).transferFrom(msg.sender, address(this), config.batchDrawPrice);
 
-        uint256 platformFee = config.batchDrawPrice * feeRate / 1e18;
-        poolBillboardMap[_poolId].totalFeeValue += (config.batchDrawPrice - platformFee);
-        poolBillboardMap[_poolId].totalDrawCount += config.batchDrawSize;
-        platformFeeMap[config.paymentToken] += platformFee;
-
         bytes32 requestId = airnodeRrp.makeFullRequest(
             airnode,
             endpointIdUint256Array,
@@ -183,11 +124,26 @@ contract Touzi is RrpRequesterV0, ITouzi, Ownable {
             sponsorWallet,
             address(this),
             this.fulfillUint256Array.selector,
-        // Using Airnode ABI to encode the parameters
-            abi.encode(bytes32("1u"), bytes32("size"), config.batchDrawSize)
+            abi.encode(bytes32("1u"), bytes32("size"), 5)
         );
         drawRequestMap[requestId] = DrawRequest(true, _poolId);
-        emit RequestedUint256Array(requestId, config.batchDrawSize);
+        emit BatchDraw(_poolId, 5, requestId);
+    }
+    
+    function _calculateRarePrizeProbability(uint256 _poolId, uint256 _number) internal view returns (uint256) {
+        PoolConfig memory config = poolConfigMap[_poolId];
+        uint256 initRare = config.rarePrizeInitRate;
+        uint256 avgRare = config.rarePrizeAvgRate;
+        uint256 maxRP = config.rarePrizeMaxRP;
+        if (_number == 0) {
+            return initRare;
+        }
+        if (_number >= maxRP) {
+            return 1e18;
+        }
+        uint256 d = (2 * avgRare - 2 * initRare) / (maxRP - 1);
+
+        return initRare + d * (_number - 1);
     }
 
     /// @notice Called by the Airnode through the AirnodeRrp contract to
@@ -196,7 +152,7 @@ contract Touzi is RrpRequesterV0, ITouzi, Ownable {
     /// fulfillments from this protocol contract. Also note that only
     /// fulfillments for the requests made by this contract are accepted, and
     /// a request cannot be responded to multiple times.
-    /// @param requestId Request ID
+    /// @param requestId Request IDw
     /// @param data ABI-encoded response
     function fulfillUint256(bytes32 requestId, bytes calldata data)
     external
@@ -207,8 +163,29 @@ contract Touzi is RrpRequesterV0, ITouzi, Ownable {
             "Request ID not known"
         );
         drawRequestMap[requestId].isWaitingFulfill = false;
-        uint256 qrngUint256 = abi.decode(data, (uint256));
-        // Do what you want with `qrngUint256` here...
+        uint256 qrngUint256 = abi.decode(data, (uint256)) & 0x3ffff;
+        uint256 poolId = drawRequestMap[requestId].poolId;
+        uint256 rp = rpMap[msg.sender][poolId];
+        uint256 p = _calculateRarePrizeProbability(poolId, rp);
+        if (qrngUint256 <= p) {
+            rpMap[msg.sender][poolId] = 0;
+            PoolConfig memory config = poolConfigMap[poolId];
+            ERC20(config.rarePrizeToken).transfer(msg.sender, config.rarePrizeValue);
+            emit GetRarePrize(poolId, msg.sender);
+        } else {
+            PoolConfig memory config = poolConfigMap[poolId];
+            rpMap[msg.sender][poolId] += 1;
+            uint256 start = 0;
+            for (uint256 i = 0; i < config.normalPrizesRate.length; i++) {
+                start += config.normalPrizesRate[i];
+                if (qrngUint256 <= start) {
+                    ERC20(config.normalPrizesToken[i]).transfer(msg.sender, config.normalPrizesValue[i]);
+                    emit GetNormalPrize(poolId, msg.sender, config.normalPrizesToken[i], config.normalPrizesValue[i]);
+                    break;
+                }
+            }
+        }
+
         emit ReceivedUint256(requestId, qrngUint256);
     }
 
@@ -226,7 +203,31 @@ contract Touzi is RrpRequesterV0, ITouzi, Ownable {
         );
         drawRequestMap[requestId].isWaitingFulfill = false;
         uint256[] memory qrngUint256Array = abi.decode(data, (uint256[]));
-        // Do what you want with `qrngUint256Array` here...
+        uint256 poolId = drawRequestMap[requestId].poolId;
+        for (uint256 i = 0; i <= qrngUint256Array.length; i++) {
+            uint256 rp = rpMap[msg.sender][poolId];
+            uint256 p = _calculateRarePrizeProbability(poolId, rp);
+            uint256 qrngUint256 = qrngUint256Array[i] & 0x3ffff;
+            if (qrngUint256 <= p) {
+                rpMap[msg.sender][poolId] = 0;
+                PoolConfig memory config = poolConfigMap[poolId];
+                ERC20(config.rarePrizeToken).transfer(msg.sender, config.rarePrizeValue);
+                emit GetRarePrize(poolId, msg.sender);
+            } else {
+                PoolConfig memory config = poolConfigMap[poolId];
+                rpMap[msg.sender][poolId] += 1;
+                uint256 start = 0;
+                for (uint256 j = 0; j < config.normalPrizesRate.length; j++) {
+                    start += config.normalPrizesRate[j];
+                    if (qrngUint256 <= start) {
+                        ERC20(config.normalPrizesToken[j]).transfer(msg.sender, config.normalPrizesValue[j]);
+                        emit GetNormalPrize(poolId, msg.sender, config.normalPrizesToken[j], config.normalPrizesValue[j]);
+                        break;
+                    }
+                }
+            }
+        }
+
         emit ReceivedUint256Array(requestId, qrngUint256Array);
     }
 }
