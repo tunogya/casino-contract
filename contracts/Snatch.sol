@@ -5,9 +5,9 @@ import "@api3/airnode-protocol/contracts/rrp/requesters/RrpRequesterV0.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "./interfaces/ITouzi.sol";
+import "./interfaces/ISnatch.sol";
 
-contract Touzi is RrpRequesterV0, ITouzi, Ownable {
+contract Snatch is RrpRequesterV0, ISnatch, Ownable {
     using Counters for Counters.Counter;
 
     event RequestedUint256(bytes32 indexed requestId);

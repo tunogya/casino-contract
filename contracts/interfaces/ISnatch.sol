@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
-interface ITouzi {
+interface ISnatch {
     struct PoolConfig {
         address paymentToken;           // payment token address
         uint256 singleDrawPrice;        // single draw price
