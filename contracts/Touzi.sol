@@ -179,9 +179,12 @@ contract Touzi is RrpRequesterV0, ITouzi, Ownable {
             for (uint256 i = 0; i < config.normalPrizesRate.length; i++) {
                 start += config.normalPrizesRate[i];
                 if (qrngUint256 <= start) {
-                    ERC20(config.normalPrizesToken[i]).transfer(msg.sender, config.normalPrizesValue[i]);
-                    emit GetNormalPrize(poolId, msg.sender, config.normalPrizesToken[i], config.normalPrizesValue[i]);
-                    break;
+                    uint256 balance = ERC20(config.normalPrizesToken[i]).balanceOf(address(this));
+                    if (balance >= config.normalPrizesValue[i]) {
+                        ERC20(config.normalPrizesToken[i]).transfer(msg.sender, config.normalPrizesValue[i]);
+                        emit GetNormalPrize(poolId, msg.sender, config.normalPrizesToken[i], config.normalPrizesValue[i]);
+                        break;
+                    }
                 }
             }
         }
@@ -220,9 +223,12 @@ contract Touzi is RrpRequesterV0, ITouzi, Ownable {
                 for (uint256 j = 0; j < config.normalPrizesRate.length; j++) {
                     start += config.normalPrizesRate[j];
                     if (qrngUint256 <= start) {
-                        ERC20(config.normalPrizesToken[j]).transfer(msg.sender, config.normalPrizesValue[j]);
-                        emit GetNormalPrize(poolId, msg.sender, config.normalPrizesToken[j], config.normalPrizesValue[j]);
-                        break;
+                        uint256 balance = ERC20(config.normalPrizesToken[j]).balanceOf(address(this));
+                        if (balance >= config.normalPrizesValue[j]) {
+                            ERC20(config.normalPrizesToken[j]).transfer(msg.sender, config.normalPrizesValue[j]);
+                            emit GetNormalPrize(poolId, msg.sender, config.normalPrizesToken[j], config.normalPrizesValue[j]);
+                            break;
+                        }
                     }
                 }
             }
