@@ -69,6 +69,10 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
         poolConfigMap[_poolId] = config;
     }
 
+    function nextPoolId() external returns (uint256 poolId) {
+        return poolIdCounter.current();
+    }
+
     function draw(uint256 _poolId) external {
         require(_poolId < poolIdCounter.current(), "Pool does not exist");
         PoolConfig memory config = poolConfigMap[_poolId];

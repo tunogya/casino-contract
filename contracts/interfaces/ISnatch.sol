@@ -27,6 +27,8 @@ interface ISnatch {
     // If update the pool share, will deposit the new share to the pool, new share >= old share
     function setPoolConfig(uint256 _poolId, PoolConfig memory config) external;
 
+    function nextPoolId() external returns (uint256 poolId);
+
     function draw(uint256 _poolId) external;
 
     function batchDraw(uint256 _poolId) external;
