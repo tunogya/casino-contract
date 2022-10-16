@@ -56,12 +56,16 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
         sponsorWallet = _sponsorWallet;
     }
 
-    function createPool() onlyOwner external returns (uint256 poolId) {
+    /// @notice Creates a new pool
+    function createPool(PoolConfig memory config) onlyOwner external returns (uint256 poolId) {
         poolId = poolIdCounter.current();
+        poolConfigMap[poolId] = config;
         poolIdCounter.increment();
     }
 
+    // @notice Update exist pool's config
     function setPoolConfig(uint256 _poolId, PoolConfig memory config) onlyOwner external {
+        require(_poolId < poolIdCounter.current(), "Pool does not exist");
         poolConfigMap[_poolId] = config;
     }
 

@@ -34,3 +34,10 @@ main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });
+
+// need update the address, use npx @api3/airnode-admin
+// https://docs.api3.org/qrng/reference/providers.html#airnode
+// npx @api3/airnode-admin derive-sponsor-wallet-address \
+//   --airnode-xpub xpub6DXSDTZBd4aPVXnv6Q3SmnGUweFv6j24SK77W4qrSFuhGgi666awUiXakjXruUSCDQhhctVG7AQt67gMdaRAsDnDXv23bBRKsMWvRzo6kbf \
+//   --airnode-address 0x9d3C147cA16DB954873A498e0af5852AB39139f2 \
+//   --sponsor-address <use-the-address-of: RemixQrngExample.sol>

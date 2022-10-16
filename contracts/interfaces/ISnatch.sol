@@ -21,8 +21,7 @@ interface ISnatch {
         uint256 poolId;                 // pool id
     }
 
-    // Create a new Pool
-    function createPool() external returns (uint256 poolId);
+    function createPool(PoolConfig memory config) external returns (uint256 poolId);
 
     // @dev When paymentToken updated, the totalFeeValue will be reset to 0 and auto withdraw all fee to the owner of the pool
     // If update the pool share, will deposit the new share to the pool, new share >= old share
