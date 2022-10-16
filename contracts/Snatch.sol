@@ -19,18 +19,11 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
     event GetRarePrize(uint256 indexed poolId, address indexed user);
     event GetNormalPrize(uint256 indexed poolId, address indexed user, address token, uint256 value);
 
-    // These variables can also be declared as `constant`/`immutable`.
-    // However, this would mean that they would not be updatable.
-    // Since it is impossible to ensure that a particular Airnode will be
-    // indefinitely available, you are recommended to always implement a way
-    // to update these parameters.
     address public airnode;
     bytes32 public endpointIdUint256;
     bytes32 public endpointIdUint256Array;
     address public sponsorWallet;
 
-    // poolId => pool owner address
-    mapping(uint256 => address) public poolOwnerMap;
     // poolId => poolConfig
     mapping(uint256 => PoolConfig) public poolConfigMap;
     // address => poolId => rp
@@ -63,36 +56,14 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
         sponsorWallet = _sponsorWallet;
     }
 
-    // -------------------------------------------------------------------
-    // Merchant functions
-    // -------------------------------------------------------------------
-
-    // Create a new Pool
-    function createPool() external returns (uint256 poolId) {
+    function createPool() onlyOwner external returns (uint256 poolId) {
         poolId = poolIdCounter.current();
         poolIdCounter.increment();
-        poolOwnerMap[poolId] = msg.sender;
     }
 
-    // @dev When paymentToken updated, the totalFeeValue will be reset to 0 and auto withdraw all fee to the owner of the pool
-    // If update the pool share, will deposit the new share to the pool, new share >= old share
-    function setPoolConfig(uint256 _poolId, PoolConfig memory config) onlyPoolOwner(_poolId) external {
+    function setPoolConfig(uint256 _poolId, PoolConfig memory config) onlyOwner external {
         poolConfigMap[_poolId] = config;
     }
-
-    /**
-     * @dev Throws if called by any account other than the owner of pool. Checked by poolId.
-     * @param _poolId The poolId of the pool
-     */
-    modifier onlyPoolOwner(uint256 _poolId) {
-        require(_poolId < poolIdCounter.current(), "Touzi: poolId not exist");
-        require(poolOwnerMap[_poolId] == _msgSender(), "Touzi: caller is not the owner of pool");
-        _;
-    }
-
-    // -------------------------------------------------------------------
-    // Player functions
-    // -------------------------------------------------------------------
 
     function draw(uint256 _poolId) external {
         PoolConfig memory config = poolConfigMap[_poolId];
