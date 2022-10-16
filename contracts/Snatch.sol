@@ -69,8 +69,8 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
         poolConfigMap[_poolId] = config;
     }
 
-    function nextPoolId() external returns (uint256 poolId) {
-        return poolIdCounter.current();
+    function nextPoolId() external view returns (uint256 poolId) {
+        poolId = poolIdCounter.current();
     }
 
     function draw(uint256 _poolId) external {
@@ -101,10 +101,10 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
             sponsorWallet,
             address(this),
             this.fulfillUint256Array.selector,
-            abi.encode(bytes32("1u"), bytes32("size"), 5)
+            abi.encode(bytes32("1u"), bytes32("size"), config.batchDrawSize)
         );
         drawRequestMap[requestId] = DrawRequest(true, _poolId);
-        emit BatchDraw(_poolId, 5, requestId);
+        emit BatchDraw(_poolId, config.batchDrawSize, requestId);
     }
 
     function _calculateRarePrizeProbability(uint256 _poolId, uint256 _number) internal view returns (uint256) {

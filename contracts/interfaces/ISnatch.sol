@@ -6,6 +6,7 @@ interface ISnatch {
         address paymentToken;           // payment token address
         uint256 singleDrawPrice;        // single draw price
         uint256 batchDrawPrice;         // batch draw price
+        uint256 batchDrawSize;          // batch draw size
         address rarePrizeToken;         // rare prize token address
         uint256 rarePrizeInitRate;      // rare prize init rate, 100% = 1e18
         uint256 rarePrizeAvgRate;       // rare prize avg rate, 100% = 1e18
@@ -27,7 +28,7 @@ interface ISnatch {
     // If update the pool share, will deposit the new share to the pool, new share >= old share
     function setPoolConfig(uint256 _poolId, PoolConfig memory config) external;
 
-    function nextPoolId() external returns (uint256 poolId);
+    function nextPoolId() external view returns (uint256 poolId);
 
     function draw(uint256 _poolId) external;
 
