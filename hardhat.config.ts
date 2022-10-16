@@ -42,6 +42,11 @@ const config: HardhatUserConfig = {
       accounts: {
         mnemonic,
       },
+      mining: {
+        mempool: {
+          order: "fifo",
+        },
+      },
     },
     goerli: {
       url: process.env.GOERLI_URL || "",
