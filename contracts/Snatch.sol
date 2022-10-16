@@ -70,10 +70,9 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
     }
 
     function draw(uint256 _poolId) external {
+        require(_poolId < poolIdCounter.current(), "Pool does not exist");
         PoolConfig memory config = poolConfigMap[_poolId];
-
         ERC20(config.paymentToken).transferFrom(msg.sender, address(this), config.singleDrawPrice);
-
         bytes32 requestId = airnodeRrp.makeFullRequest(
             airnode,
             endpointIdUint256,
@@ -88,10 +87,9 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
     }
 
     function batchDraw(uint256 _poolId) external {
+        require(_poolId < poolIdCounter.current(), "Pool does not exist");
         PoolConfig memory config = poolConfigMap[_poolId];
-
         ERC20(config.paymentToken).transferFrom(msg.sender, address(this), config.batchDrawPrice);
-
         bytes32 requestId = airnodeRrp.makeFullRequest(
             airnode,
             endpointIdUint256Array,
