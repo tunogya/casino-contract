@@ -33,4 +33,6 @@ interface ISnatch {
     function draw(uint256 _poolId) external;
 
     function batchDraw(uint256 _poolId) external;
+
+    function withdraw(address token, uint256 amount) external;
 }

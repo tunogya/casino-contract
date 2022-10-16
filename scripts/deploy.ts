@@ -26,6 +26,12 @@ async function main() {
   const snatcher = await Snatch.deploy(airnodeRrp);
   await snatcher.deployed();
   console.log("Snatch deployed to:", snatcher.address);
+  console.log("You need to get sponsor-address. The code is:");
+  console.log(`npx @api3/airnode-admin derive-sponsor-wallet-address \
+  --airnode-xpub xpub6DXSDTZBd4aPVXnv6Q3SmnGUweFv6j24SK77W4qrSFuhGgi666awUiXakjXruUSCDQhhctVG7AQt67gMdaRAsDnDXv23bBRKsMWvRzo6kbf \
+  --airnode-address 0x9d3C147cA16DB954873A498e0af5852AB39139f2 \
+  --sponsor-address ${snatcher.address}`);
+  console.log("You need to set setRequestParameters");
 }
 
 // We recommend this pattern to be able to use async/await everywhere
@@ -34,10 +40,3 @@ main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });
-
-// need update the address, use npx @api3/airnode-admin
-// https://docs.api3.org/qrng/reference/providers.html#airnode
-// npx @api3/airnode-admin derive-sponsor-wallet-address \
-//   --airnode-xpub xpub6DXSDTZBd4aPVXnv6Q3SmnGUweFv6j24SK77W4qrSFuhGgi666awUiXakjXruUSCDQhhctVG7AQt67gMdaRAsDnDXv23bBRKsMWvRzo6kbf \
-//   --airnode-address 0x9d3C147cA16DB954873A498e0af5852AB39139f2 \
-//   --sponsor-address <use-the-address-of: RemixQrngExample.sol>
