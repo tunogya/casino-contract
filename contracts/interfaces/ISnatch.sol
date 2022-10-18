@@ -18,8 +18,9 @@ interface ISnatch {
     }
 
     struct DrawRequest {
-        bool isWaitingFulfill;          // is waiting fulfill
+        address requester;              // requester address
         uint256 poolId;                 // pool id
+        bool isWaitingFulfill;          // is waiting fulfill
     }
 
     function createPool(PoolConfig memory config) external returns (uint256 poolId);
