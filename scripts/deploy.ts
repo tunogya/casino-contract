@@ -23,11 +23,11 @@ async function main() {
   const airnodeRrp = AirnodeRrpV0[chainId];
   console.log("AirnodeRrpV0:", airnodeRrp);
   const Snatch = await ethers.getContractFactory("Snatch");
-  // const snatcher = await Snatch.deploy(airnodeRrp);
-  // await snatcher.deployed();
-  const snatcher = await Snatch.attach(
-    "0xd55a95ead97B8D7f97E66fc08a213AcE515fb7E6"
-  );
+  const snatcher = await Snatch.deploy(airnodeRrp);
+  await snatcher.deployed();
+  // const snatcher = await Snatch.attach(
+  //   ""
+  // );
   console.log("Snatch deployed to:", snatcher.address);
   console.log("You need to get sponsor-address. The code is:");
   // https://docs.api3.org/qrng/reference/providers.html#airnode
@@ -37,39 +37,35 @@ async function main() {
   // --sponsor-address ${snatcher.address}`);
   // console.log("You need to set setRequestParameters");
   const WUSD = await ethers.getContractFactory("WakandaUSD");
-  // const wusd = await WUSD.deploy();
-  // await wusd.deployed();
   const wusd = await WUSD.attach("0xDfcBBb16FeEB9dD9cE3870f6049bD11d28390FbF");
   console.log("WUSD deployed to:", wusd.address);
   const Diamond = await ethers.getContractFactory("Diamond");
-  // const diamond = await Diamond.deploy();
-  // await diamond.deployed();
   const diamond = await Diamond.attach(
     "0xDc5f81Ffa28761Fb5305072043EbF629A5c12351"
   );
   console.log("Diamond deployed to:", diamond.address);
-  // await snatcher.createPool({
-  //   paymentToken: wusd.address,
-  //   singleDrawPrice: ethers.utils.parseEther("60"),
-  //   batchDrawPrice: ethers.utils.parseEther("270"),
-  //   batchDrawSize: 5,
-  //   rarePrizeToken: diamond.address,
-  //   rarePrizeInitRate: ethers.utils.parseEther("0.001"),
-  //   rarePrizeAvgRate: ethers.utils.parseEther("0.05"),
-  //   rarePrizeValue: ethers.utils.parseEther("1"),
-  //   rarePrizeMaxRP: ethers.utils.parseEther("200"),
-  //   normalPrizesToken: [wusd.address, wusd.address, wusd.address],
-  //   normalPrizesValue: [
-  //     ethers.utils.parseEther("10"),
-  //     ethers.utils.parseEther("20"),
-  //     ethers.utils.parseEther("30"),
-  //   ],
-  //   normalPrizesRate: [
-  //     ethers.utils.parseEther("0.4"),
-  //     ethers.utils.parseEther("0.2"),
-  //     ethers.utils.parseEther("0.1"),
-  //   ],
-  // });
+  await snatcher.createPool({
+    paymentToken: wusd.address,
+    singleDrawPrice: ethers.utils.parseEther("60"),
+    batchDrawPrice: ethers.utils.parseEther("270"),
+    batchDrawSize: 5,
+    rarePrizeToken: diamond.address,
+    rarePrizeInitRate: ethers.utils.parseEther("0.00001"),
+    rarePrizeAvgRate: ethers.utils.parseEther("0.008"),
+    rarePrizeValue: ethers.utils.parseEther("1"),
+    rarePrizeMaxRP: 200,
+    normalPrizesToken: [wusd.address, wusd.address, wusd.address],
+    normalPrizesValue: [
+      ethers.utils.parseEther("10"),
+      ethers.utils.parseEther("20"),
+      ethers.utils.parseEther("30"),
+    ],
+    normalPrizesRate: [
+      ethers.utils.parseEther("0.4"),
+      ethers.utils.parseEther("0.2"),
+      ethers.utils.parseEther("0.1"),
+    ],
+  });
   // console.log("createPool done");
   await wusd.approve(snatcher.address, ethers.constants.MaxUint256);
 }
