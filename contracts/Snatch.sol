@@ -113,15 +113,12 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
         uint256 initRare = config.rarePrizeInitRate;
         uint256 avgRare = config.rarePrizeAvgRate;
         uint256 maxRP = config.rarePrizeMaxRP;
-        if (_number == 0) {
-            return initRare;
-        }
         if (_number >= maxRP) {
             return 1e18;
         }
         uint256 d = (2 * avgRare - 2 * initRare) / (maxRP - 1);
 
-        return initRare + d * (_number - 1);
+        return initRare + d * _number;
     }
 
     function calculateRarePrizeProbability(uint256 _poolId, uint256 _rp) external view returns (uint256) {
