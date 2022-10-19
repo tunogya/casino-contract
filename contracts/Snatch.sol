@@ -122,10 +122,6 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
         return initRare + d * _number;
     }
 
-    function calculateRarePrizeProbability(uint256 _poolId, uint256 _rp) external view returns (uint256) {
-        return _calculateRarePrizeProbability(_poolId, _rp);
-    }
-
     /// @notice Called by the Airnode through the AirnodeRrp contract to
     /// fulfill the request
     /// @dev Note the `onlyAirnodeRrp` modifier. You should only accept RRP
