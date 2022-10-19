@@ -67,6 +67,7 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
     // @notice Update exist pool's config
     function setPoolConfig(uint256 _poolId, PoolConfig memory config) onlyOwner external {
         require(_poolId < poolIdCounter.current(), "Pool does not exist");
+        require(config.rarePrizeInitRate <= config.rarePrizeAvgRate, "Rare prize init rate must be less than avg rate");
         poolConfigMap[_poolId] = config;
     }
 
