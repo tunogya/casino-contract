@@ -26,11 +26,11 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
     address public sponsorWallet;
 
     // poolId => poolConfig
-    mapping(uint256 => PoolConfig) public poolConfigMap;
+    mapping(uint256 => PoolConfig) private poolConfigMap;
     // address => poolId => rp
-    mapping(address => mapping(uint256 => uint256)) public rpMap;
+    mapping(address => mapping(uint256 => uint256)) private rpMap;
     // requestId => DrawRequest
-    mapping(bytes32 => DrawRequest) public drawRequestMap;
+    mapping(bytes32 => DrawRequest) private drawRequestMap;
 
     Counters.Counter private poolIdCounter;
 
@@ -223,5 +223,19 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
         require(amount <= ERC20(token).balanceOf(address(this)), "Not enough balance");
         ERC20(token).transfer(msg.sender, amount);
         emit Withdraw(token, amount);
+    }
+
+    function rpOf(address _user, uint256 _poolId) external view returns (uint256) {
+        require(_poolId < poolIdCounter.current(), "Pool does not exist");
+        return rpMap[_user][_poolId];
+    }
+
+    function poolConfigOf(uint256 _poolId) external view returns (PoolConfig memory) {
+        require(_poolId < poolIdCounter.current(), "Pool does not exist");
+        return poolConfigMap[_poolId];
+    }
+
+    function drawRequestOf(bytes32 _requestId) external view returns (DrawRequest memory) {
+        return drawRequestMap[_requestId];
     }
 }
