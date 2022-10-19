@@ -130,7 +130,7 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
     /// a request cannot be responded to multiple times.
     /// @param requestId Request IDw
     /// @param data ABI-encoded response
-    function fulfillUint256(bytes32 requestId, bytes calldata data)
+    function fulfillUint256(bytes32 requestId, bytes calldata data) // 0x8521546f24900095dfe1fad2a1283ded0868f8287d429df841daeb5bd1baa8f1
     external
     onlyAirnodeRrp
     {
@@ -140,7 +140,7 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
         );
         drawRequestMap[requestId].isWaitingFulfill = false;
         address requester = drawRequestMap[requestId].requester;
-        uint256 qrngUint256 = abi.decode(data, (uint256)) & 0x3ffff;
+        uint256 qrngUint256 = abi.decode(data, (uint256)) & 0xffffffffffffffffff;
         uint256 poolId = drawRequestMap[requestId].poolId;
         uint256 rp = rpMap[requester][poolId];
         uint256 p = _calculateRarePrizeProbability(poolId, rp);
@@ -188,7 +188,7 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
         for (uint256 i = 0; i <= qrngUint256Array.length; i++) {
             uint256 rp = rpMap[requester][poolId];
             uint256 p = _calculateRarePrizeProbability(poolId, rp);
-            uint256 qrngUint256 = qrngUint256Array[i] & 0x3ffff;
+            uint256 qrngUint256 = qrngUint256Array[i] & 0xffffffffffffffffff;
             if (qrngUint256 <= p) {
                 rpMap[requester][poolId] = 0;
                 PoolConfig memory config = poolConfigMap[poolId];
