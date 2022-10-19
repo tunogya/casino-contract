@@ -145,7 +145,7 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
             "Request ID not known"
         );
         drawRequestMap[requestId].isWaitingFulfill = false;
-        uint256 requester = drawRequestMap[requestId].requester;
+        address requester = drawRequestMap[requestId].requester;
         uint256 qrngUint256 = abi.decode(data, (uint256)) & 0x3ffff;
         uint256 poolId = drawRequestMap[requestId].poolId;
         uint256 rp = rpMap[requester][poolId];
@@ -188,7 +188,7 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
             "Request ID not known"
         );
         drawRequestMap[requestId].isWaitingFulfill = false;
-        uint256 requester = drawRequestMap[requestId].requester;
+        address requester = drawRequestMap[requestId].requester;
         uint256[] memory qrngUint256Array = abi.decode(data, (uint256[]));
         uint256 poolId = drawRequestMap[requestId].poolId;
         for (uint256 i = 0; i <= qrngUint256Array.length; i++) {
