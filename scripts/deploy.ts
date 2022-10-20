@@ -24,61 +24,59 @@ async function main() {
   console.log("AirnodeRrpV0:", airnodeRrp);
   const Snatch = await ethers.getContractFactory("Snatch");
   console.log("Deploying Snatch...");
-  // const snatcher = await Snatch.deploy(airnodeRrp);
-  // await snatcher.deployed();
-  const snatcher = await Snatch.attach(
-    "0x88e29aE46D68f5C1656529eD841e35582Ff25646"
-  );
+  const snatcher = await Snatch.deploy(airnodeRrp);
+  await snatcher.deployed();
+  // const snatcher = await Snatch.attach(
+  //   "0x88e29aE46D68f5C1656529eD841e35582Ff25646"
+  // );
   console.log("Snatch deployed to:", snatcher.address);
-  // console.log("You need to get sponsor-address. The code is:");
-  // https://docs.api3.org/qrng/reference/providers.html#airnode
-  // console.log(`npx @api3/airnode-admin derive-sponsor-wallet-address \
-  // --airnode-xpub xpub6DXSDTZBd4aPVXnv6Q3SmnGUweFv6j24SK77W4qrSFuhGgi666awUiXakjXruUSCDQhhctVG7AQt67gMdaRAsDnDXv23bBRKsMWvRzo6kbf \
-  // --airnode-address 0x9d3C147cA16DB954873A498e0af5852AB39139f2 \
-  // --sponsor-address ${snatcher.address}`);
-  const WUSD = await ethers.getContractFactory("WakandaUSD");
-  const wusd = await WUSD.attach("0xDfcBBb16FeEB9dD9cE3870f6049bD11d28390FbF");
-  const Diamond = await ethers.getContractFactory("Diamond");
-  const diamond = await Diamond.attach(
+  console.log("You need to get sponsor-address. The code is:");
+  // // https://docs.api3.org/qrng/reference/providers.html#airnode
+  console.log(`npx @api3/airnode-admin derive-sponsor-wallet-address \
+  --airnode-xpub xpub6DXSDTZBd4aPVXnv6Q3SmnGUweFv6j24SK77W4qrSFuhGgi666awUiXakjXruUSCDQhhctVG7AQt67gMdaRAsDnDXv23bBRKsMWvRzo6kbf \
+  --airnode-address 0x9d3C147cA16DB954873A498e0af5852AB39139f2 \
+  --sponsor-address ${snatcher.address}`);
+  const ERC20 = await ethers.getContractFactory("ERC20");
+  const wusd = await ERC20.attach("0xDfcBBb16FeEB9dD9cE3870f6049bD11d28390FbF");
+  const diamond = await ERC20.attach(
     "0xDc5f81Ffa28761Fb5305072043EbF629A5c12351"
   );
-  await (
-    await snatcher.createPool({
-      paymentToken: wusd.address,
-      singleDrawPrice: ethers.utils.parseEther("60"),
-      batchDrawPrice: ethers.utils.parseEther("270"),
-      batchDrawSize: 5,
-      rarePrizeToken: diamond.address,
-      rarePrizeInitRate: ethers.utils.parseEther("0.00001"),
-      rarePrizeAvgRate: ethers.utils.parseEther("0.008"),
-      rarePrizeValue: ethers.utils.parseEther("1"),
-      rarePrizeMaxRP: 200,
-      normalPrizesToken: [wusd.address, wusd.address, wusd.address],
-      normalPrizesValue: [
-        ethers.utils.parseEther("10"),
-        ethers.utils.parseEther("20"),
-        ethers.utils.parseEther("30"),
-      ],
-      normalPrizesRate: [
-        ethers.utils.parseEther("0.4"),
-        ethers.utils.parseEther("0.2"),
-        ethers.utils.parseEther("0.1"),
-      ],
-    })
-  ).wait();
-  console.log("createPool");
-  // await (
-  //   await wusd.approve(snatcher.address, ethers.constants.MaxUint256)
-  // ).wait();
-  // console.log("approve wusd");
-  // await (
-  //   await wusd.transfer(snatcher.address, ethers.utils.parseEther("100"))
-  // ).wait();
-  // console.log("transfer wusd");
-  // await (
-  //   await diamond.transfer(snatcher.address, ethers.utils.parseEther("10"))
-  // ).wait();
-  // console.log("transfer diamond");
+  const createPool = await snatcher.createPool({
+    paymentToken: wusd.address,
+    singleDrawPrice: ethers.utils.parseEther("60"),
+    batchDrawPrice: ethers.utils.parseEther("270"),
+    batchDrawSize: 5,
+    rarePrizeToken: diamond.address,
+    rarePrizeInitRate: ethers.utils.parseEther("0.00001"),
+    rarePrizeAvgRate: ethers.utils.parseEther("0.008"),
+    rarePrizeValue: ethers.utils.parseEther("1"),
+    rarePrizeMaxRP: 40,
+    normalPrizesToken: [wusd.address, wusd.address, wusd.address],
+    normalPrizesValue: [
+      ethers.utils.parseEther("10"),
+      ethers.utils.parseEther("20"),
+      ethers.utils.parseEther("30"),
+    ],
+    normalPrizesRate: [
+      ethers.utils.parseEther("0.5"),
+      ethers.utils.parseEther("0.3"),
+      ethers.utils.parseEther("0.2"),
+    ],
+  });
+  await createPool.wait();
+  console.log("createPool done");
+  const approveWUSD = await wusd.approve(
+    snatcher.address,
+    ethers.constants.MaxUint256
+  );
+  await approveWUSD.wait();
+  console.log("approve done");
+  const transferDO = await diamond.transfer(
+    snatcher.address,
+    ethers.utils.parseEther("10")
+  );
+  await transferDO.wait();
+  console.log("transferDO done");
   // setRequestParameters
   // await snatcher.setRequestParameters(
   //   "0x9d3C147cA16DB954873A498e0af5852AB39139f2",

@@ -185,7 +185,7 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
         uint256[] memory qrngUint256Array = abi.decode(data, (uint256[]));
         uint256 poolId = drawRequestMap[requestId].poolId;
         PoolConfig memory config = poolConfigMap[poolId];
-        for (uint256 j = 0; j <= qrngUint256Array.length; j++) {
+        for (uint256 j = 0; j < qrngUint256Array.length; j++) {
             uint256 qrngUint256 = qrngUint256Array[j] & 0xffffffffffffffffff;
             uint256 rp = rpMap[requester][poolId];
             uint256 p = _calculateRarePrizeProbability(poolId, rp);
