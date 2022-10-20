@@ -23,52 +23,71 @@ async function main() {
   const airnodeRrp = AirnodeRrpV0[chainId];
   console.log("AirnodeRrpV0:", airnodeRrp);
   const Snatch = await ethers.getContractFactory("Snatch");
-  const snatcher = await Snatch.deploy(airnodeRrp);
-  await snatcher.deployed();
-  // const snatcher = await Snatch.attach(
-  //   ""
-  // );
+  console.log("Deploying Snatch...");
+  // const snatcher = await Snatch.deploy(airnodeRrp);
+  // await snatcher.deployed();
+  const snatcher = await Snatch.attach(
+    "0x88e29aE46D68f5C1656529eD841e35582Ff25646"
+  );
   console.log("Snatch deployed to:", snatcher.address);
-  console.log("You need to get sponsor-address. The code is:");
+  // console.log("You need to get sponsor-address. The code is:");
   // https://docs.api3.org/qrng/reference/providers.html#airnode
   // console.log(`npx @api3/airnode-admin derive-sponsor-wallet-address \
   // --airnode-xpub xpub6DXSDTZBd4aPVXnv6Q3SmnGUweFv6j24SK77W4qrSFuhGgi666awUiXakjXruUSCDQhhctVG7AQt67gMdaRAsDnDXv23bBRKsMWvRzo6kbf \
   // --airnode-address 0x9d3C147cA16DB954873A498e0af5852AB39139f2 \
   // --sponsor-address ${snatcher.address}`);
-  // console.log("You need to set setRequestParameters");
   const WUSD = await ethers.getContractFactory("WakandaUSD");
   const wusd = await WUSD.attach("0xDfcBBb16FeEB9dD9cE3870f6049bD11d28390FbF");
-  console.log("WUSD deployed to:", wusd.address);
   const Diamond = await ethers.getContractFactory("Diamond");
   const diamond = await Diamond.attach(
     "0xDc5f81Ffa28761Fb5305072043EbF629A5c12351"
   );
-  console.log("Diamond deployed to:", diamond.address);
-  await snatcher.createPool({
-    paymentToken: wusd.address,
-    singleDrawPrice: ethers.utils.parseEther("60"),
-    batchDrawPrice: ethers.utils.parseEther("270"),
-    batchDrawSize: 5,
-    rarePrizeToken: diamond.address,
-    rarePrizeInitRate: ethers.utils.parseEther("0.00001"),
-    rarePrizeAvgRate: ethers.utils.parseEther("0.008"),
-    rarePrizeValue: ethers.utils.parseEther("1"),
-    rarePrizeMaxRP: 200,
-    normalPrizesToken: [wusd.address, wusd.address, wusd.address],
-    normalPrizesValue: [
-      ethers.utils.parseEther("10"),
-      ethers.utils.parseEther("20"),
-      ethers.utils.parseEther("30"),
-    ],
-    normalPrizesRate: [
-      ethers.utils.parseEther("0.4"),
-      ethers.utils.parseEther("0.2"),
-      ethers.utils.parseEther("0.1"),
-    ],
-  });
-  // console.log("createPool done");
-  await wusd.approve(snatcher.address, ethers.constants.MaxUint256);
+  await (
+    await snatcher.createPool({
+      paymentToken: wusd.address,
+      singleDrawPrice: ethers.utils.parseEther("60"),
+      batchDrawPrice: ethers.utils.parseEther("270"),
+      batchDrawSize: 5,
+      rarePrizeToken: diamond.address,
+      rarePrizeInitRate: ethers.utils.parseEther("0.00001"),
+      rarePrizeAvgRate: ethers.utils.parseEther("0.008"),
+      rarePrizeValue: ethers.utils.parseEther("1"),
+      rarePrizeMaxRP: 200,
+      normalPrizesToken: [wusd.address, wusd.address, wusd.address],
+      normalPrizesValue: [
+        ethers.utils.parseEther("10"),
+        ethers.utils.parseEther("20"),
+        ethers.utils.parseEther("30"),
+      ],
+      normalPrizesRate: [
+        ethers.utils.parseEther("0.4"),
+        ethers.utils.parseEther("0.2"),
+        ethers.utils.parseEther("0.1"),
+      ],
+    })
+  ).wait();
+  console.log("createPool");
+  // await (
+  //   await wusd.approve(snatcher.address, ethers.constants.MaxUint256)
+  // ).wait();
+  // console.log("approve wusd");
+  // await (
+  //   await wusd.transfer(snatcher.address, ethers.utils.parseEther("100"))
+  // ).wait();
+  // console.log("transfer wusd");
+  // await (
+  //   await diamond.transfer(snatcher.address, ethers.utils.parseEther("10"))
+  // ).wait();
+  // console.log("transfer diamond");
+  // setRequestParameters
+  // await snatcher.setRequestParameters(
+  //   "0x9d3C147cA16DB954873A498e0af5852AB39139f2",
+  //   "0xfb6d017bb87991b7495f563db3c8cf59ff87b09781947bb1e417006ad7f55a78",
+  //   "0x27cc2713e7f968e4e86ed274a051a5c8aaee9cca66946f23af6f29ecea9704c3",
+  //   ""
+  // );
 }
+
 // We recommend this pattern to be able to use async/await everywhere
 // and properly handle errors.
 main().catch((error) => {

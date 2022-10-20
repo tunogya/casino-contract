@@ -144,13 +144,12 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
         uint256 poolId = drawRequestMap[requestId].poolId;
         uint256 rp = rpMap[requester][poolId];
         uint256 p = _calculateRarePrizeProbability(poolId, rp);
+        PoolConfig memory config = poolConfigMap[poolId];
         if (qrngUint256 <= p) {
             rpMap[requester][poolId] = 0;
-            PoolConfig memory config = poolConfigMap[poolId];
             ERC20(config.rarePrizeToken).transfer(requester, config.rarePrizeValue);
             emit GetRarePrize(poolId, requester);
         } else {
-            PoolConfig memory config = poolConfigMap[poolId];
             rpMap[requester][poolId] += 1;
             uint256 start = 0;
             for (uint256 i = 0; i < config.normalPrizesRate.length; i++) {
@@ -185,26 +184,25 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
         address requester = drawRequestMap[requestId].requester;
         uint256[] memory qrngUint256Array = abi.decode(data, (uint256[]));
         uint256 poolId = drawRequestMap[requestId].poolId;
-        for (uint256 i = 0; i <= qrngUint256Array.length; i++) {
+        PoolConfig memory config = poolConfigMap[poolId];
+        for (uint256 j = 0; j <= qrngUint256Array.length; j++) {
+            uint256 qrngUint256 = qrngUint256Array[j] & 0xffffffffffffffffff;
             uint256 rp = rpMap[requester][poolId];
             uint256 p = _calculateRarePrizeProbability(poolId, rp);
-            uint256 qrngUint256 = qrngUint256Array[i] & 0xffffffffffffffffff;
             if (qrngUint256 <= p) {
                 rpMap[requester][poolId] = 0;
-                PoolConfig memory config = poolConfigMap[poolId];
                 ERC20(config.rarePrizeToken).transfer(requester, config.rarePrizeValue);
                 emit GetRarePrize(poolId, requester);
             } else {
-                PoolConfig memory config = poolConfigMap[poolId];
                 rpMap[requester][poolId] += 1;
                 uint256 start = 0;
-                for (uint256 j = 0; j < config.normalPrizesRate.length; j++) {
-                    start += config.normalPrizesRate[j];
+                for (uint256 i = 0; i < config.normalPrizesRate.length; i++) {
+                    start += config.normalPrizesRate[i];
                     if (qrngUint256 <= start) {
-                        uint256 balance = ERC20(config.normalPrizesToken[j]).balanceOf(address(this));
-                        if (balance >= config.normalPrizesValue[j]) {
-                            ERC20(config.normalPrizesToken[j]).transfer(requester, config.normalPrizesValue[j]);
-                            emit GetNormalPrize(poolId, requester, config.normalPrizesToken[j], config.normalPrizesValue[j]);
+                        uint256 balance = ERC20(config.normalPrizesToken[i]).balanceOf(address(this));
+                        if (balance >= config.normalPrizesValue[i]) {
+                            ERC20(config.normalPrizesToken[i]).transfer(requester, config.normalPrizesValue[i]);
+                            emit GetNormalPrize(poolId, requester, config.normalPrizesToken[i], config.normalPrizesValue[i]);
                             break;
                         }
                     }
