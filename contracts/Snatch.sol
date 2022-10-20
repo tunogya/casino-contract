@@ -147,8 +147,13 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
         PoolConfig memory config = poolConfigMap[poolId];
         if (qrngUint256 <= p) {
             rpMap[requester][poolId] = 0;
-            ERC20(config.rarePrizeToken).transfer(requester, config.rarePrizeValue);
-            emit GetRarePrize(poolId, requester);
+            uint256 balance = ERC20(config.rarePrizeToken).balanceOf(address(this));
+            if (balance >=  config.rarePrizeValue) {
+                ERC20(config.rarePrizeToken).transfer(requester, config.rarePrizeValue);
+                emit GetRarePrize(poolId, requester);
+            } else {
+                ERC20(config.paymentToken).transfer(requester, config.singleDrawPrice);
+            }
         } else {
             rpMap[requester][poolId] += 1;
             uint256 start = 0;
@@ -160,6 +165,8 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
                         ERC20(config.normalPrizesToken[i]).transfer(requester, config.normalPrizesValue[i]);
                         emit GetNormalPrize(poolId, requester, config.normalPrizesToken[i], config.normalPrizesValue[i]);
                         break;
+                    } else {
+                        ERC20(config.paymentToken).transfer(requester, config.singleDrawPrice);
                     }
                 }
             }
@@ -191,8 +198,13 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
             uint256 p = _calculateRarePrizeProbability(poolId, rp);
             if (qrngUint256 <= p) {
                 rpMap[requester][poolId] = 0;
-                ERC20(config.rarePrizeToken).transfer(requester, config.rarePrizeValue);
-                emit GetRarePrize(poolId, requester);
+                uint256 balance = ERC20(config.rarePrizeToken).balanceOf(address(this));
+                if (balance >= config.rarePrizeValue) {
+                    ERC20(config.rarePrizeToken).transfer(requester, config.rarePrizeValue);
+                    emit GetRarePrize(poolId, requester);
+                } else {
+                    ERC20(config.paymentToken).transfer(requester, config.singleDrawPrice);
+                }
             } else {
                 rpMap[requester][poolId] += 1;
                 uint256 start = 0;
@@ -204,6 +216,8 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
                             ERC20(config.normalPrizesToken[i]).transfer(requester, config.normalPrizesValue[i]);
                             emit GetNormalPrize(poolId, requester, config.normalPrizesToken[i], config.normalPrizesValue[i]);
                             break;
+                        } else {
+                            ERC20(config.paymentToken).transfer(requester, config.singleDrawPrice);
                         }
                     }
                 }

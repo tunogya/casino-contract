@@ -24,11 +24,11 @@ async function main() {
   console.log("AirnodeRrpV0:", airnodeRrp);
   const Snatch = await ethers.getContractFactory("Snatch");
   console.log("Deploying Snatch...");
-  const snatcher = await Snatch.deploy(airnodeRrp);
-  await snatcher.deployed();
-  // const snatcher = await Snatch.attach(
-  //   "0x88e29aE46D68f5C1656529eD841e35582Ff25646"
-  // );
+  // const snatcher = await Snatch.deploy(airnodeRrp);
+  // await snatcher.deployed();
+  const snatcher = await Snatch.attach(
+    "0xfA74D14436Ce429fd99020550BF06F59e6bC5354"
+  );
   console.log("Snatch deployed to:", snatcher.address);
   console.log("You need to get sponsor-address. The code is:");
   // // https://docs.api3.org/qrng/reference/providers.html#airnode
@@ -82,7 +82,7 @@ async function main() {
   //   "0x9d3C147cA16DB954873A498e0af5852AB39139f2",
   //   "0xfb6d017bb87991b7495f563db3c8cf59ff87b09781947bb1e417006ad7f55a78",
   //   "0x27cc2713e7f968e4e86ed274a051a5c8aaee9cca66946f23af6f29ecea9704c3",
-  //   ""
+  //   "0xa37c6b08aB755a034b7E83e6234FC6374F468a8b"
   // );
 }
 
