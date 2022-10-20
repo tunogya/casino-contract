@@ -68,7 +68,6 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
     // @notice Update exist pool's config
     function setPoolConfig(uint256 _poolId, PoolConfig memory config) onlyOwner external {
         require(_poolId < poolIdCounter.current(), "Pool does not exist");
-        require(config.rarePrizeInitRate <= config.rarePrizeAvgRate, "Rare prize init rate must be less than avg rate");
         poolConfigMap[_poolId] = config;
     }
 
@@ -110,17 +109,13 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
         emit BatchDraw(_poolId, config.batchDrawSize, requestId);
     }
 
-    function _calculateRarePrizeProbability(uint256 _poolId, uint256 _number) internal view returns (uint256) {
+    function _calculateP(uint256 _poolId, uint256 _rp) internal view returns (uint256) {
         PoolConfig memory config = poolConfigMap[_poolId];
-        uint256 initRare = config.rarePrizeInitRate;
-        uint256 avgRare = config.rarePrizeAvgRate;
-        uint256 maxRP = config.rarePrizeMaxRP;
-        if (_number >= maxRP) {
-            return 1e18;
+        if (_rp >= config.rarePrizeMaxRP) {
+            return 1 ether;
         }
-        uint256 d = (2 * avgRare - 2 * initRare) / (maxRP - 1);
 
-        return initRare + d * _number;
+        return config.rarePrizeInitRate + config.rarePrizeRateD * _rp;
     }
 
     /// @notice Called by the Airnode through the AirnodeRrp contract to
@@ -144,7 +139,7 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
         uint256 qrngUint256 = abi.decode(data, (uint256)) & 0xffffffffffffffffff;
         uint256 poolId = drawRequestMap[requestId].poolId;
         uint256 rp = rpMap[requester][poolId];
-        uint256 p = _calculateRarePrizeProbability(poolId, rp);
+        uint256 p = _calculateP(poolId, rp);
         PoolConfig memory config = poolConfigMap[poolId];
         if (qrngUint256 <= p) {
             rpMap[requester][poolId] = 0;
@@ -199,7 +194,7 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
         for (uint256 j = 0; j < qrngUint256Array.length; j++) {
             uint256 qrngUint256 = qrngUint256Array[j] & 0xffffffffffffffffff;
             uint256 rp = rpMap[requester][poolId];
-            uint256 p = _calculateRarePrizeProbability(poolId, rp);
+            uint256 p = _calculateP(poolId, rp);
             if (qrngUint256 <= p) {
                 rpMap[requester][poolId] = 0;
                 uint256 balance = ERC20(config.rarePrizeToken).balanceOf(address(this));

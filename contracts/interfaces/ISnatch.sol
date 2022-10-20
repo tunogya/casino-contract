@@ -9,7 +9,7 @@ interface ISnatch {
         uint256 batchDrawSize;          // batch draw size
         address rarePrizeToken;         // rare prize token address
         uint256 rarePrizeInitRate;      // rare prize init rate, 100% = 1e18
-        uint256 rarePrizeAvgRate;       // rare prize avg rate, 100% = 1e18
+        uint256 rarePrizeRateD;         // rare prize rate d
         uint256 rarePrizeValue;         // rare prize value
         uint256 rarePrizeMaxRP;         // rare prize max rp
         address[] normalPrizesToken;    // normal prize token addresses

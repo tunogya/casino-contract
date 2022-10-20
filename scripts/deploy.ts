@@ -24,11 +24,11 @@ async function main() {
   console.log("AirnodeRrpV0:", airnodeRrp);
   const Snatch = await ethers.getContractFactory("Snatch");
   console.log("Deploying Snatch...");
-  const snatcher = await Snatch.deploy(airnodeRrp);
-  await snatcher.deployed();
-  // const snatcher = await Snatch.attach(
-  //   "0xfA74D14436Ce429fd99020550BF06F59e6bC5354"
-  // );
+  // const snatcher = await Snatch.deploy(airnodeRrp);
+  // await snatcher.deployed();
+  const snatcher = await Snatch.attach(
+    "0xD873C6Dc27E89D3210E7Dd3d7102c6079b8101b5"
+  );
   console.log("Snatch deployed to:", snatcher.address);
   console.log("You need to get sponsor-address. The code is:");
   // // https://docs.api3.org/qrng/reference/providers.html#airnode
@@ -48,7 +48,7 @@ async function main() {
     batchDrawSize: 5,
     rarePrizeToken: diamond.address,
     rarePrizeInitRate: ethers.utils.parseEther("0.01"),
-    rarePrizeAvgRate: ethers.utils.parseEther("0.2"),
+    rarePrizeRateD: ethers.utils.parseEther("0.001"),
     rarePrizeValue: ethers.utils.parseEther("1"),
     rarePrizeMaxRP: 10,
     normalPrizesToken: [wusd.address, wusd.address, wusd.address],
