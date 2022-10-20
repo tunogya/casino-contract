@@ -19,6 +19,7 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
     event GetRarePrize(uint256 indexed poolId, address indexed user);
     event GetNormalPrize(uint256 indexed poolId, address indexed user, address token, uint256 value);
     event Withdraw(address indexed token, uint256 value);
+    event Refund(address indexed user, address indexed token, uint256 value);
 
     address public airnode;
     bytes32 public endpointIdUint256;
@@ -153,6 +154,7 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
                 emit GetRarePrize(poolId, requester);
             } else {
                 ERC20(config.paymentToken).transfer(requester, config.singleDrawPrice);
+                emit Refund(requester, config.paymentToken, config.singleDrawPrice);
             }
         } else {
             rpMap[requester][poolId] += 1;
@@ -167,6 +169,8 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
                         break;
                     } else {
                         ERC20(config.paymentToken).transfer(requester, config.singleDrawPrice);
+                        emit Refund(requester, config.paymentToken, config.singleDrawPrice);
+                        break;
                     }
                 }
             }
@@ -204,6 +208,7 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
                     emit GetRarePrize(poolId, requester);
                 } else {
                     ERC20(config.paymentToken).transfer(requester, config.singleDrawPrice);
+                    emit Refund(requester, config.paymentToken, config.singleDrawPrice);
                 }
             } else {
                 rpMap[requester][poolId] += 1;
@@ -218,6 +223,8 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
                             break;
                         } else {
                             ERC20(config.paymentToken).transfer(requester, config.singleDrawPrice);
+                            emit Refund(requester, config.paymentToken, config.singleDrawPrice);
+                            break;
                         }
                     }
                 }
