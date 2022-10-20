@@ -149,7 +149,7 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
         if (qrngUint256 <= p) {
             rpMap[requester][poolId] = 0;
             uint256 balance = ERC20(config.rarePrizeToken).balanceOf(address(this));
-            if (balance >=  config.rarePrizeValue) {
+            if (balance >= config.rarePrizeValue) {
                 ERC20(config.rarePrizeToken).transfer(requester, config.rarePrizeValue);
                 emit GetRarePrize(poolId, requester);
             } else {
