@@ -126,7 +126,7 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
     /// a request cannot be responded to multiple times.
     /// @param requestId Request IDw
     /// @param data ABI-encoded response
-    function fulfillUint256(bytes32 requestId, bytes calldata data) // 0x8521546f24900095dfe1fad2a1283ded0868f8287d429df841daeb5bd1baa8f1
+    function fulfillUint256(bytes32 requestId, bytes calldata data)
     external
     onlyAirnodeRrp
     {
@@ -136,7 +136,7 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
         );
         drawRequestMap[requestId].isWaitingFulfill = false;
         address requester = drawRequestMap[requestId].requester;
-        uint256 qrngUint256 = abi.decode(data, (uint256)) & 0xffffffffffffffffff;
+        uint256 qrngUint256 = abi.decode(data, (uint256)) % 1 ether;
         uint256 poolId = drawRequestMap[requestId].poolId;
         uint256 rp = rpMap[requester][poolId];
         uint256 p = _calculateP(poolId, rp);
@@ -192,7 +192,7 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
         uint256 poolId = drawRequestMap[requestId].poolId;
         PoolConfig memory config = poolConfigMap[poolId];
         for (uint256 j = 0; j < qrngUint256Array.length; j++) {
-            uint256 qrngUint256 = qrngUint256Array[j] & 0xffffffffffffffffff;
+            uint256 qrngUint256 = qrngUint256Array[j] % 1 ether;
             uint256 rp = rpMap[requester][poolId];
             uint256 p = _calculateP(poolId, rp);
             if (qrngUint256 <= p) {
