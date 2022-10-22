@@ -19,6 +19,7 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
     event GetRarePrize(uint256 indexed poolId, address indexed user);
     event GetNormalPrize(uint256 indexed poolId, address indexed user, address token, uint256 value);
     event Withdraw(address indexed token, uint256 value);
+    event WithdrawETH(uint256 value);
     event Refund(address indexed user, address indexed token, uint256 value);
 
     address public airnode;
@@ -136,7 +137,9 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
         );
         drawRequestMap[requestId].isWaitingFulfill = false;
         address requester = drawRequestMap[requestId].requester;
-        uint256 qrngUint256 = abi.decode(data, (uint256)) % 1 ether;
+        uint256 qrngUint256 = abi.decode(data, (uint256));
+        emit ReceivedUint256(requestId, qrngUint256);
+        uint256 qrngUint256 = qrngUint256 % 1 ether;
         uint256 poolId = drawRequestMap[requestId].poolId;
         uint256 rp = rpMap[requester][poolId];
         uint256 p = _calculateP(poolId, rp);
@@ -170,8 +173,6 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
                 }
             }
         }
-
-        emit ReceivedUint256(requestId, qrngUint256);
     }
 
     /// @notice Called by the Airnode through the AirnodeRrp contract to
@@ -189,6 +190,7 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
         drawRequestMap[requestId].isWaitingFulfill = false;
         address requester = drawRequestMap[requestId].requester;
         uint256[] memory qrngUint256Array = abi.decode(data, (uint256[]));
+        emit ReceivedUint256Array(requestId, qrngUint256Array);
         uint256 poolId = drawRequestMap[requestId].poolId;
         PoolConfig memory config = poolConfigMap[poolId];
         for (uint256 j = 0; j < qrngUint256Array.length; j++) {
@@ -225,14 +227,18 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
                 }
             }
         }
-
-        emit ReceivedUint256Array(requestId, qrngUint256Array);
     }
 
     function withdraw(address token, uint256 amount) onlyOwner external {
         require(amount <= ERC20(token).balanceOf(address(this)), "Not enough balance");
         ERC20(token).transfer(msg.sender, amount);
         emit Withdraw(token, amount);
+    }
+
+    function withdrawETH(uint256 amount) onlyOwner external {
+        require(amount <= address(this).balance, "Not enough balance");
+        payable(msg.sender).transfer(amount);
+        emit WithdrawETH(amount);
     }
 
     function rpOf(address _user, uint256 _poolId) external view returns (uint256) {
