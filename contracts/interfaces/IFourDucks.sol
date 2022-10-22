@@ -3,10 +3,10 @@ pragma solidity 0.8.9;
 
 interface IFourDucks {
     struct PoolConfig {
-        address[4] players;          // players
-        address[4] tokens;           // payment token address
-        uint256[4] amount;           // stake amount
-        bool[4] unified;             // unified
+        address[] players;          // players
+        address[] tokens;           // payment token address
+        uint256[] amount;           // stake amount
+        bool[] unified;             // unified
     }
 
     struct StakeRequest {

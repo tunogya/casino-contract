@@ -21,8 +21,8 @@ contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
     address public sponsorWallet;
     uint256 public fee;
 
-    mapping(address => PoolConfig) public poolConfigMap;
-    mapping(bytes32 => StakeRequest) public stakeRequestMap;
+    mapping(address => PoolConfig) private poolConfigMap;
+    mapping(bytes32 => StakeRequest) private stakeRequestMap;
 
     /// @dev RrpRequester sponsors itself, meaning that it can make requests
     /// that will be fulfilled by its sponsor wallet. See the Airnode protocol
@@ -45,7 +45,7 @@ contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
     }
 
     function setFee(uint256 _value) onlyOwner external {
-        setFee(_value);
+        fee = _value;
         emit SetFee(_value);
     }
 
@@ -75,7 +75,8 @@ contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
     function stake(address _poolId, address _token, uint256 _amount, bool _unified) external {
         PoolConfig storage poolConfig = poolConfigMap[_poolId];
         require(_playersCountOf(_poolId) < 4, "FourDucks: players count is 4");
-        require(_eligibilityOf(_poolId, msg.sender, "FourDucks: no eligibility"));
+        require(_eligibilityOf(_poolId, msg.sender), "FourDucks: no eligibility");
+
         ERC20(_token).transferFrom(msg.sender, address(this), _amount);
         poolConfig.players[_playersCountOf(_poolId)] = msg.sender;
         poolConfig.tokens[_playersCountOf(_poolId)] = _token;
@@ -86,12 +87,12 @@ contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
         if (_playersCountOf(_poolId) == 4) {
             bytes32 requestId = airnodeRrp.makeFullRequest(
                 airnode,
-                endpointIdUint256Array,
+                endpointIdUint256,
                 address(this),
                 sponsorWallet,
                 address(this),
-                this.fulfillUint256Array.selector,
-                abi.encode(bytes32("1u"), bytes32("size"), 4)
+                this.fulfillUint256.selector,
+                ""
             );
             stakeRequestMap[requestId] = StakeRequest(_poolId, true);
             emit Opening(_poolId, requestId);
@@ -118,7 +119,7 @@ contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
         uint256 qrngUint256 = abi.decode(data, (uint256));
         emit ReceivedUint256(requestId, qrngUint256);
 
-        uint256[8] ducksCoordinates;
+        uint256[] memory ducksCoordinates;
         uint256 max;
         uint256 min;
         for (uint256 i = 0; i < 8; i++) {
@@ -131,7 +132,7 @@ contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
                 min = ducksCoordinates[i];
             }
         }
-        uint256 poolId = stakeRequestMap[requestId].poolId;
+        address  poolId = stakeRequestMap[requestId].poolId;
         if (max - min < 0x80000000) {
             emit RevealLocation(poolId, ducksCoordinates, true);
             _settle(poolId, true);
@@ -144,12 +145,21 @@ contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
     function _settle(address _poolId, bool unified) internal {
         PoolConfig storage config = poolConfigMap[_poolId];
         // settle reward
-
+        for (uint256 i = 0; i < 4; i++) {
+            if (config.unified[i] == unified) {
+                uint256 balance = ERC20(config.tokens[i]).balanceOf(address(this));
+                if (balance >= 2 * config.amount[i]) {
+                    ERC20(config.tokens[i]).transfer(config.players[i], 2 * (1 ether - fee) / 1 ether * config.amount[i]);
+                } else {
+                    ERC20(config.tokens[i]).transfer(config.players[i], 2 * (1 ether - fee) / 1 ether * balance);
+                }
+            }
+        }
     }
 
     function withdraw(address _token, uint256 _amount) onlyOwner external {
         require(_amount <= ERC20(_token).balanceOf(address(this)), "Not enough balance");
-        ERC20(_token).transfer(msg.sender, amount);
+        ERC20(_token).transfer(msg.sender, _amount);
         emit Withdraw(_token, _amount);
     }
 
@@ -161,5 +171,9 @@ contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
 
     function poolConfigOf(address _poolId) external view returns (PoolConfig memory) {
         return poolConfigMap[_poolId];
+    }
+
+    function stakeRequestOf(bytes32 requestId) external view returns (StakeRequest memory) {
+        return stakeRequestMap[requestId];
     }
 }

@@ -139,7 +139,7 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
         address requester = drawRequestMap[requestId].requester;
         uint256 qrngUint256 = abi.decode(data, (uint256));
         emit ReceivedUint256(requestId, qrngUint256);
-        uint256 qrngUint256 = qrngUint256 % 1 ether;
+        qrngUint256 = qrngUint256 % 1 ether;
         uint256 poolId = drawRequestMap[requestId].poolId;
         uint256 rp = rpMap[requester][poolId];
         uint256 p = _calculateP(poolId, rp);
