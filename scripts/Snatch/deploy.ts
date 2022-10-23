@@ -27,7 +27,7 @@ async function main() {
   // const snatcher = await Snatch.deploy(airnodeRrp);
   // await snatcher.deployed();
   const snatcher = await Snatch.attach(
-    "0x28fAc63FCF28311F0abc1A6E64a601F6086657fE"
+    "0x6040181fdf1281d9dAb495D2A576eC62c248a68F"
   );
   console.log("Snatch deployed to:", snatcher.address);
   console.log("You need to get sponsor-address. The code is:");
@@ -36,54 +36,14 @@ async function main() {
   --airnode-xpub xpub6DXSDTZBd4aPVXnv6Q3SmnGUweFv6j24SK77W4qrSFuhGgi666awUiXakjXruUSCDQhhctVG7AQt67gMdaRAsDnDXv23bBRKsMWvRzo6kbf \
   --airnode-address 0x9d3C147cA16DB954873A498e0af5852AB39139f2 \
   --sponsor-address ${snatcher.address}`);
-  const ERC20 = await ethers.getContractFactory("ERC20");
-  const wusd = await ERC20.attach("0xDfcBBb16FeEB9dD9cE3870f6049bD11d28390FbF");
-  const diamond = await ERC20.attach(
-    "0xDc5f81Ffa28761Fb5305072043EbF629A5c12351"
-  );
-  const createPool = await snatcher.createPool({
-    paymentToken: wusd.address,
-    singleDrawPrice: ethers.utils.parseEther("60"),
-    batchDrawPrice: ethers.utils.parseEther("270"),
-    batchDrawSize: 5,
-    rarePrizeToken: diamond.address,
-    rarePrizeInitRate: ethers.utils.parseEther("0.01"),
-    rarePrizeRateD: ethers.utils.parseEther("0.001"),
-    rarePrizeValue: ethers.utils.parseEther("1"),
-    rarePrizeMaxRP: 10,
-    normalPrizesToken: [wusd.address, wusd.address, wusd.address],
-    normalPrizesValue: [
-      ethers.utils.parseEther("10"),
-      ethers.utils.parseEther("20"),
-      ethers.utils.parseEther("30"),
-    ],
-    normalPrizesRate: [
-      ethers.utils.parseEther("0.5"),
-      ethers.utils.parseEther("0.3"),
-      ethers.utils.parseEther("0.2"),
-    ],
-  });
-  await createPool.wait();
-  console.log("createPool done");
-  const approveWUSD = await wusd.approve(
-    snatcher.address,
-    ethers.constants.MaxUint256
-  );
-  await approveWUSD.wait();
-  console.log("approve done");
-  const transferDO = await diamond.transfer(
-    snatcher.address,
-    ethers.utils.parseEther("10")
-  );
-  await transferDO.wait();
   console.log("transferDO done");
   // setRequestParameters
-  await snatcher.setRequestParameters(
-    "0x9d3C147cA16DB954873A498e0af5852AB39139f2",
-    "0xfb6d017bb87991b7495f563db3c8cf59ff87b09781947bb1e417006ad7f55a78",
-    "0x27cc2713e7f968e4e86ed274a051a5c8aaee9cca66946f23af6f29ecea9704c3",
-    "0x5e1Bc6468A26525b6Ba5a7819F1Eb8C72fc6Ad57"
-  );
+  // await snatcher.setRequestParameters(
+  //   "0x9d3C147cA16DB954873A498e0af5852AB39139f2",
+  //   "0xfb6d017bb87991b7495f563db3c8cf59ff87b09781947bb1e417006ad7f55a78",
+  //   "0x27cc2713e7f968e4e86ed274a051a5c8aaee9cca66946f23af6f29ecea9704c3",
+  //   "0xbFeae35e2D83afD10dd0acbA576dF722ff86282E"
+  // );
   console.log("setRequestParameters done");
 }
 

@@ -27,7 +27,7 @@ async function main() {
   // const fourDucks = await FourDucks.deploy(airnodeRrp);
   // await fourDucks.deployed();
   const fourDucks = await FourDucks.attach(
-    "0x3dA52e06A6c7dEff72c9016Aa59a8a9DD702C73C"
+    "0xcB12ee888B4Fd3e7ff29612087F093bD9Ee4f606"
   );
   console.log("FourDucks deployed to:", fourDucks.address);
   console.log("You need to get sponsor-address. The code is:");
@@ -40,7 +40,7 @@ async function main() {
   // await fourDucks.setRequestParameters(
   //   "0x9d3C147cA16DB954873A498e0af5852AB39139f2",
   //   "0xfb6d017bb87991b7495f563db3c8cf59ff87b09781947bb1e417006ad7f55a78",
-  //   "0xfa364e2014D3Ce9cae4E321F0E4ce3a4c8f2b306"
+  //   "0xa41f03FE80C21C767e9828E64F2b8B2E8D00f6F3"
   // );
   console.log("setRequestParameters done");
 }
