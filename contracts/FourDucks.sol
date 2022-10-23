@@ -8,12 +8,9 @@ import "./interfaces/IFourDucks.sol";
 
 contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
     event RequestedUint256(address indexed poolId, bytes32 indexed requestId);
-    event ReceivedUint256(bytes32 indexed requestId, uint256 response);
-    event WithdrawERC20(address indexed token, uint256 value);
-    event WithdrawNativeCurrency(uint256 value);
+    event ReceivedUint256(address indexed poolId, bytes32 indexed requestId, uint256 response);
     event Stake(address indexed poolId, address indexed player, address token, int256 amount);
     event SetFee(uint256 value);
-    event RevealLocation(address indexed poolId, uint256[] coordinate, bool unified);
 
     address public airnode;
     bytes32 public endpointIdUint256;
@@ -117,7 +114,8 @@ contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
         );
         stakeRequestMap[requestId].isWaitingFulfill = false;
         uint256 qrngUint256 = abi.decode(data, (uint256));
-        emit ReceivedUint256(requestId, qrngUint256);
+        address poolId = stakeRequestMap[requestId].poolId;
+        emit ReceivedUint256(poolId, requestId, qrngUint256);
 
         uint256[] memory ducksCoordinates = new uint256[](8);
         uint256 max;
@@ -140,12 +138,9 @@ contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
             qrngUint256 = qrngUint256 >> 32;
         }
 
-        address poolId = stakeRequestMap[requestId].poolId;
         if (max - min <= 0x80000000) {
-            emit RevealLocation(poolId, ducksCoordinates, true);
             _settle(poolId, true);
         } else {
-            emit RevealLocation(poolId, ducksCoordinates, false);
             _settle(poolId, false);
         }
     }
@@ -168,13 +163,11 @@ contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
     function withdrawERC20(address _token, uint256 _amount) onlyOwner external {
         require(_amount <= ERC20(_token).balanceOf(address(this)), "Not enough balance");
         ERC20(_token).transfer(msg.sender, _amount);
-        emit WithdrawERC20(_token, _amount);
     }
 
     function withdrawNativeCurrency(uint256 _amount) onlyOwner external {
         require(_amount <= address(this).balance, "Not enough balance");
         payable(msg.sender).transfer(_amount);
-        emit WithdrawNativeCurrency(_amount);
     }
 
     function poolConfigOf(address _poolId) external view returns (PoolConfig memory) {
