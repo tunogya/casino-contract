@@ -75,16 +75,21 @@ contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
     }
 
     function _abs(int256 x) private pure returns (uint256) {
-        return x >= 0 ? uint256(x) : uint256(-x);
+        return x >= 0 ? uint256(x) : uint256(- x);
     }
 
-    function stake(address _poolId, address _token, int256 _amount) external {
+    function stake(address _poolId, address _token, int256 _amount) payable external {
         PoolConfig storage poolConfig = poolConfigMap[_poolId];
         require(_playersCountOf(_poolId) < 4, "FourDucks: players count is 4");
         require(_eligibilityOf(_poolId, msg.sender), "FourDucks: no eligibility");
         require(_abs(_amount) > 0, "FourDucks: amount must be greater than 0");
 
-        ERC20(_token).transferFrom(msg.sender, address(this), _abs(_amount));
+        if (_token == NATIVE_CURRENCY) {
+            require(msg.value >= _abs(_amount), "FourDucks: msg.value must be equal to amount");
+        } else {
+            require(ERC20(_token).transferFrom(msg.sender, address(this), _abs(_amount)), "FourDucks: transferFrom failed");
+        }
+
         poolConfig.players[_playersCountOf(_poolId)] = msg.sender;
         poolConfig.tokens[_playersCountOf(_poolId)] = _token;
         poolConfig.amount[_playersCountOf(_poolId)] = _amount;

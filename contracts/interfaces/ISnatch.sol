@@ -31,9 +31,9 @@ interface ISnatch {
 
     function nextPoolId() external view returns (uint256 poolId);
 
-    function draw(uint256 _poolId) external;
+    function draw(uint256 _poolId) payable external;
 
-    function batchDraw(uint256 _poolId) external;
+    function batchDraw(uint256 _poolId) payable external;
 
     function withdrawERC20(address token, uint256 amount) external;
 

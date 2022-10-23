@@ -16,7 +16,7 @@ interface IFourDucks {
     // 10% = 1e17
     function setFee(uint256 _value) external;
 
-    function stake(address _poolId, address _token, int256 _amount) external;
+    function stake(address _poolId, address _token, int256 _amount) payable external;
 
     function withdrawERC20(address _token, uint256 _amount) external;
 

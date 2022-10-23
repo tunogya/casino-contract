@@ -27,6 +27,8 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
     bytes32 public endpointIdUint256Array;
     address public sponsorWallet;
 
+    address public constant NATIVE_CURRENCY = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
     // poolId => poolConfig
     mapping(uint256 => PoolConfig) private poolConfigMap;
     // address => poolId => rp
@@ -76,10 +78,16 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
         poolId = poolIdCounter.current();
     }
 
-    function draw(uint256 _poolId) external {
+    function draw(uint256 _poolId) payable external {
         require(_poolId < poolIdCounter.current(), "Pool does not exist");
         PoolConfig memory config = poolConfigMap[_poolId];
-        ERC20(config.paymentToken).transferFrom(msg.sender, address(this), config.singleDrawPrice);
+
+        if (config.paymentToken != NATIVE_CURRENCY) {
+            require(ERC20(config.paymentToken).transferFrom(msg.sender, address(this), config.singleDrawPrice), "Transfer failed");
+        } else {
+            require(msg.value == config.singleDrawPrice, "Invalid value");
+        }
+
         bytes32 requestId = airnodeRrp.makeFullRequest(
             airnode,
             endpointIdUint256,
@@ -93,10 +101,16 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
         emit Draw(_poolId, requestId);
     }
 
-    function batchDraw(uint256 _poolId) external {
+    function batchDraw(uint256 _poolId) payable external {
         require(_poolId < poolIdCounter.current(), "Pool does not exist");
         PoolConfig memory config = poolConfigMap[_poolId];
-        ERC20(config.paymentToken).transferFrom(msg.sender, address(this), config.batchDrawPrice);
+
+        if (config.paymentToken != NATIVE_CURRENCY) {
+            require(ERC20(config.paymentToken).transferFrom(msg.sender, address(this), config.batchDrawPrice), "Transfer failed");
+        } else {
+            require(msg.value >= config.batchDrawPrice, "Invalid value");
+        }
+
         bytes32 requestId = airnodeRrp.makeFullRequest(
             airnode,
             endpointIdUint256Array,
@@ -213,15 +227,27 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
                 for (uint256 i = 0; i < config.normalPrizesRate.length; i++) {
                     start += config.normalPrizesRate[i];
                     if (qrngUint256 <= start) {
-                        uint256 balance = ERC20(config.normalPrizesToken[i]).balanceOf(address(this));
-                        if (balance >= config.normalPrizesValue[i]) {
-                            ERC20(config.normalPrizesToken[i]).transfer(requester, config.normalPrizesValue[i]);
-                            emit GetNormalPrize(poolId, requester, config.normalPrizesToken[i], config.normalPrizesValue[i]);
-                            break;
+                        if (config.normalPrizesToken[i] != NATIVE_CURRENCY) {
+                            uint256 balance = ERC20(config.normalPrizesToken[i]).balanceOf(address(this));
+                            if (balance >= config.normalPrizesValue[i]) {
+                                ERC20(config.normalPrizesToken[i]).transfer(requester, config.normalPrizesValue[i]);
+                                emit GetNormalPrize(poolId, requester, config.normalPrizesToken[i], config.normalPrizesValue[i]);
+                                break;
+                            } else {
+                                ERC20(config.paymentToken).transfer(requester, config.singleDrawPrice);
+                                emit Refund(requester, config.paymentToken, config.singleDrawPrice);
+                                break;
+                            }
                         } else {
-                            ERC20(config.paymentToken).transfer(requester, config.singleDrawPrice);
-                            emit Refund(requester, config.paymentToken, config.singleDrawPrice);
-                            break;
+                            if (address(this).balance >= config.normalPrizesValue[i]) {
+                                payable(requester).transfer(config.normalPrizesValue[i]);
+                                emit GetNormalPrize(poolId, requester, config.normalPrizesToken[i], config.normalPrizesValue[i]);
+                                break;
+                            } else {
+                                payable(requester).transfer(config.singleDrawPrice);
+                                emit Refund(requester, config.paymentToken, config.singleDrawPrice);
+                                break;
+                            }
                         }
                     }
                 }
