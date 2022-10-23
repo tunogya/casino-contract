@@ -47,6 +47,8 @@ contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
     }
 
     function setFee(uint256 _value) onlyOwner external {
+        require(_value <= 1e18, "Fee must be less than 1 ether");
+
         fee = _value;
         emit SetFee(_value);
     }
