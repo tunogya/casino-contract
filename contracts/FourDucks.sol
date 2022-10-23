@@ -7,12 +7,11 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./interfaces/IFourDucks.sol";
 
 contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
-    event RequestedUint256(bytes32 indexed requestId);
+    event RequestedUint256(address indexed poolId, bytes32 indexed requestId);
     event ReceivedUint256(bytes32 indexed requestId, uint256 response);
     event WithdrawERC20(address indexed token, uint256 value);
     event WithdrawNativeCurrency(uint256 value);
     event Stake(address indexed poolId, address indexed player, address token, int256 amount);
-    event Opening(address indexed poolId, bytes32 requestId);
     event SetFee(uint256 value);
     event RevealLocation(address indexed poolId, uint256[] coordinate, bool unified);
 
@@ -47,28 +46,16 @@ contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
     }
 
     function setFee(uint256 _value) onlyOwner external {
-        require(_value <= 1e18, "Fee must be less than 1 ether");
+        require(_value <= 1 ether, "Fee must be less than 1 ether");
 
         fee = _value;
         emit SetFee(_value);
     }
 
-    function _playersCountOf(address _poolId) internal view returns (uint256 count) {
-        PoolConfig memory config = poolConfigMap[_poolId];
-        count = 0;
-        for (uint256 i = 0; i < 4; i++) {
-            if (config.players[i] != address(0)) {
-                count++;
-            } else {
-                break;
-            }
-        }
-    }
-
     function _eligibilityOf(address _poolId, address _player) internal view returns (bool eligibility) {
         PoolConfig memory config = poolConfigMap[_poolId];
         eligibility = true;
-        for (uint256 i = 0; i < 4; i++) {
+        for (uint256 i = 0; i < config.players.length; i++) {
             if (config.players[i] == _player) {
                 eligibility = false;
                 break;
@@ -81,8 +68,8 @@ contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
     }
 
     function stake(address _poolId, address _token, int256 _amount) payable external {
-        PoolConfig storage poolConfig = poolConfigMap[_poolId];
-        require(_playersCountOf(_poolId) < 4, "FourDucks: players count is 4");
+        PoolConfig storage config = poolConfigMap[_poolId];
+        require(config.players.length < 4, "FourDucks: max players count is 4");
         require(_eligibilityOf(_poolId, msg.sender), "FourDucks: no eligibility");
         require(_abs(_amount) > 0, "FourDucks: amount must be greater than 0");
 
@@ -92,12 +79,12 @@ contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
             require(ERC20(_token).transferFrom(msg.sender, address(this), _abs(_amount)), "FourDucks: transferFrom failed");
         }
 
-        poolConfig.players[_playersCountOf(_poolId)] = msg.sender;
-        poolConfig.tokens[_playersCountOf(_poolId)] = _token;
-        poolConfig.amount[_playersCountOf(_poolId)] = _amount;
+        config.players[config.players.length] = msg.sender;
+        config.tokens[config.players.length] = _token;
+        config.amount[config.players.length] = _amount;
         emit Stake(_poolId, msg.sender, _token, _amount);
 
-        if (_playersCountOf(_poolId) == 4) {
+        if (config.players.length == 4) {
             bytes32 requestId = airnodeRrp.makeFullRequest(
                 airnode,
                 endpointIdUint256,
@@ -108,7 +95,7 @@ contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
                 ""
             );
             stakeRequestMap[requestId] = StakeRequest(_poolId, true);
-            emit Opening(_poolId, requestId);
+            emit RequestedUint256(_poolId, requestId);
         }
     }
 
@@ -154,7 +141,7 @@ contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
         }
 
         address poolId = stakeRequestMap[requestId].poolId;
-        if (max - min < 0x80000000) {
+        if (max - min <= 0x80000000) {
             emit RevealLocation(poolId, ducksCoordinates, true);
             _settle(poolId, true);
         } else {
