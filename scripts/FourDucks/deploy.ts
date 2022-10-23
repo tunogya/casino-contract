@@ -22,7 +22,7 @@ async function main() {
   console.log("Chain ID:", chainId);
   const airnodeRrp = AirnodeRrpV0[chainId];
   console.log("AirnodeRrpV0:", airnodeRrp);
-  const FourDucks = await ethers.getContractFactory("Snatch");
+  const FourDucks = await ethers.getContractFactory("FourDucks");
   console.log("Deploying FourDucks...");
   const fourDucks = await FourDucks.deploy(airnodeRrp);
   await fourDucks.deployed();
