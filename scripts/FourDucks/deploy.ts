@@ -24,11 +24,11 @@ async function main() {
   console.log("AirnodeRrpV0:", airnodeRrp);
   const FourDucks = await ethers.getContractFactory("Snatch");
   console.log("Deploying FourDucks...");
-  // const fourDucks = await FourDucks.deploy(airnodeRrp);
-  // await fourDucks.deployed();
-  const fourDucks = await FourDucks.attach(
-    "0xcB12ee888B4Fd3e7ff29612087F093bD9Ee4f606"
-  );
+  const fourDucks = await FourDucks.deploy(airnodeRrp);
+  await fourDucks.deployed();
+  // const fourDucks = await FourDucks.attach(
+  //   "0xcB12ee888B4Fd3e7ff29612087F093bD9Ee4f606"
+  // );
   console.log("FourDucks deployed to:", fourDucks.address);
   console.log("You need to get sponsor-address. The code is:");
   // // https://docs.api3.org/qrng/reference/providers.html#airnode

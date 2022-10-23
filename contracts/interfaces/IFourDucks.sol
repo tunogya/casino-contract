@@ -18,9 +18,7 @@ interface IFourDucks {
 
     function stake(address _poolId, address _token, int256 _amount) payable external;
 
-    function withdrawERC20(address _token, uint256 _amount) external;
-
-    function withdrawNativeCurrency(uint256 _amount) external;
+    function withdraw(address _token, uint256 _amount) external;
 
     function poolConfigOf(address _poolId) external view returns (PoolConfig memory);
 }

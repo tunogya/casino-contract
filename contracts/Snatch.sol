@@ -244,14 +244,14 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
         }
     }
 
-    function withdrawERC20(address token, uint256 amount) onlyOwner external {
-        require(amount <= ERC20(token).balanceOf(address(this)), "Not enough balance");
-        ERC20(token).transfer(msg.sender, amount);
-    }
-
-    function withdrawNativeCurrency(uint256 amount) onlyOwner external {
-        require(amount <= address(this).balance, "Not enough balance");
-        payable(msg.sender).transfer(amount);
+    function withdraw(address token, uint256 amount) onlyOwner external {
+        if (token == NATIVE_CURRENCY) {
+            require(amount <= address(this).balance, "Not enough balance");
+            payable(msg.sender).transfer(amount);
+        } else {
+            require(amount <= ERC20(token).balanceOf(address(this)), "Not enough balance");
+            ERC20(token).transfer(msg.sender, amount);
+        }
     }
 
     function rpOf(address _user, uint256 _poolId) external view returns (uint256) {

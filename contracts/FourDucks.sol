@@ -160,14 +160,14 @@ contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
         delete poolConfigMap[_poolId];
     }
 
-    function withdrawERC20(address _token, uint256 _amount) onlyOwner external {
-        require(_amount <= ERC20(_token).balanceOf(address(this)), "Not enough balance");
-        ERC20(_token).transfer(msg.sender, _amount);
-    }
-
-    function withdrawNativeCurrency(uint256 _amount) onlyOwner external {
-        require(_amount <= address(this).balance, "Not enough balance");
-        payable(msg.sender).transfer(_amount);
+    function withdraw(address token, uint256 amount) onlyOwner external {
+        if (token == NATIVE_CURRENCY) {
+            require(amount <= address(this).balance, "Not enough balance");
+            payable(msg.sender).transfer(amount);
+        } else {
+            require(amount <= ERC20(token).balanceOf(address(this)), "Not enough balance");
+            ERC20(token).transfer(msg.sender, amount);
+        }
     }
 
     function poolConfigOf(address _poolId) external view returns (PoolConfig memory) {
