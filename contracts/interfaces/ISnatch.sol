@@ -35,7 +35,7 @@ interface ISnatch {
 
     function batchDraw(uint256 _poolId) external;
 
-    function withdraw(address token, uint256 amount) external;
+    function withdrawERC20(address token, uint256 amount) external;
 
-    function withdrawETH(uint256 amount) external;
+    function withdrawNativeCurrency(uint256 amount) external;
 }

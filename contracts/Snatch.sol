@@ -232,7 +232,7 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
     function withdrawERC20(address token, uint256 amount) onlyOwner external {
         require(amount <= ERC20(token).balanceOf(address(this)), "Not enough balance");
         ERC20(token).transfer(msg.sender, amount);
-        emit WithdrawWRC20(token, amount);
+        emit WithdrawERC20(token, amount);
     }
 
     function withdrawNativeCurrency(uint256 amount) onlyOwner external {

@@ -154,7 +154,6 @@ contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
             emit RevealLocation(poolId, ducksCoordinates, false);
             _settle(poolId, false);
         }
-        delete poolConfigMap[poolId];
     }
 
     function _settle(address _poolId, bool unified) internal {
@@ -169,6 +168,7 @@ contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
                 ERC20(config.tokens[i]).transfer(config.players[i], amount * 2 * (1 ether - fee) / 1 ether);
             }
         }
+        delete poolConfigMap[_poolId];
     }
 
     function withdrawERC20(address _token, uint256 _amount) onlyOwner external {
