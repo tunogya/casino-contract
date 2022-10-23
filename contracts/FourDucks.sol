@@ -9,9 +9,9 @@ import "./interfaces/IFourDucks.sol";
 contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
     event RequestedUint256(bytes32 indexed requestId);
     event ReceivedUint256(bytes32 indexed requestId, uint256 response);
-    event Withdraw(address indexed token, uint256 value);
-    event WithdrawETH(uint256 value);
-    event Stake(address indexed poolId, address indexed player, address token, uint256 amount, bool unified);
+    event WithdrawERC20(address indexed token, uint256 value);
+    event WithdrawNativeCurrency(uint256 value);
+    event Stake(address indexed poolId, address indexed player, address token, int256 amount);
     event Opening(address indexed poolId, bytes32 requestId);
     event SetFee(uint256 value);
     event RevealLocation(address indexed poolId, uint256[] coordinate, bool unified);
@@ -20,6 +20,8 @@ contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
     bytes32 public endpointIdUint256;
     address public sponsorWallet;
     uint256 public fee;
+
+    address public constant NATIVE_CURRENCY = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     mapping(address => PoolConfig) private poolConfigMap;
     mapping(bytes32 => StakeRequest) private stakeRequestMap;
@@ -72,17 +74,21 @@ contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
         }
     }
 
-    function stake(address _poolId, address _token, uint256 _amount, bool _unified) external {
+    function _abs(int256 x) private pure returns (uint256) {
+        return x >= 0 ? uint256(x) : uint256(-x);
+    }
+
+    function stake(address _poolId, address _token, int256 _amount) external {
         PoolConfig storage poolConfig = poolConfigMap[_poolId];
         require(_playersCountOf(_poolId) < 4, "FourDucks: players count is 4");
         require(_eligibilityOf(_poolId, msg.sender), "FourDucks: no eligibility");
+        require(_abs(_amount) > 0, "FourDucks: amount must be greater than 0");
 
-        ERC20(_token).transferFrom(msg.sender, address(this), _amount);
+        ERC20(_token).transferFrom(msg.sender, address(this), _abs(_amount));
         poolConfig.players[_playersCountOf(_poolId)] = msg.sender;
         poolConfig.tokens[_playersCountOf(_poolId)] = _token;
         poolConfig.amount[_playersCountOf(_poolId)] = _amount;
-        poolConfig.unified[_playersCountOf(_poolId)] = _unified;
-        emit Stake(_poolId, msg.sender, _token, _amount, _unified);
+        emit Stake(_poolId, msg.sender, _token, _amount);
 
         if (_playersCountOf(_poolId) == 4) {
             bytes32 requestId = airnodeRrp.makeFullRequest(
@@ -119,20 +125,28 @@ contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
         uint256 qrngUint256 = abi.decode(data, (uint256));
         emit ReceivedUint256(requestId, qrngUint256);
 
-        uint256[] memory ducksCoordinates;
+        uint256[] memory ducksCoordinates = new uint256[](8);
         uint256 max;
         uint256 min;
         for (uint256 i = 0; i < 8; i++) {
-            qrngUint256 << 32 * i;
             ducksCoordinates[i] = qrngUint256 & 0xffffffff;
-            if (i % 2 == 0 && ducksCoordinates[i] > max) {
-                max = ducksCoordinates[i];
+            if (i % 2 == 0) {
+                if (i == 0) {
+                    max = ducksCoordinates[i];
+                    min = ducksCoordinates[i];
+                } else {
+                    if (ducksCoordinates[i] > max) {
+                        max = ducksCoordinates[i];
+                    }
+                    if (ducksCoordinates[i] < min) {
+                        min = ducksCoordinates[i];
+                    }
+                }
             }
-            if (i % 2 == 0 && (ducksCoordinates[i] < min || min == 0)) {
-                min = ducksCoordinates[i];
-            }
+            qrngUint256 = qrngUint256 >> 32;
         }
-        address  poolId = stakeRequestMap[requestId].poolId;
+
+        address poolId = stakeRequestMap[requestId].poolId;
         if (max - min < 0x80000000) {
             emit RevealLocation(poolId, ducksCoordinates, true);
             _settle(poolId, true);
@@ -140,33 +154,33 @@ contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
             emit RevealLocation(poolId, ducksCoordinates, false);
             _settle(poolId, false);
         }
+        delete poolConfigMap[poolId];
     }
 
     function _settle(address _poolId, bool unified) internal {
         PoolConfig storage config = poolConfigMap[_poolId];
-        // settle reward
         for (uint256 i = 0; i < 4; i++) {
-            if (config.unified[i] == unified) {
+            if (config.amount[i] > 0 && unified || config.amount[i] < 0 && !unified) {
                 uint256 balance = ERC20(config.tokens[i]).balanceOf(address(this));
-                if (balance >= 2 * config.amount[i]) {
-                    ERC20(config.tokens[i]).transfer(config.players[i], 2 * (1 ether - fee) / 1 ether * config.amount[i]);
-                } else {
-                    ERC20(config.tokens[i]).transfer(config.players[i], 2 * (1 ether - fee) / 1 ether * balance);
+                uint256 amount = _abs(config.amount[i]);
+                if (balance < amount) {
+                    amount = balance;
                 }
+                ERC20(config.tokens[i]).transfer(config.players[i], amount * 2 * (1 ether - fee) / 1 ether);
             }
         }
     }
 
-    function withdraw(address _token, uint256 _amount) onlyOwner external {
+    function withdrawERC20(address _token, uint256 _amount) onlyOwner external {
         require(_amount <= ERC20(_token).balanceOf(address(this)), "Not enough balance");
         ERC20(_token).transfer(msg.sender, _amount);
-        emit Withdraw(_token, _amount);
+        emit WithdrawERC20(_token, _amount);
     }
 
-    function withdrawETH(uint256 _amount) onlyOwner external {
+    function withdrawNativeCurrency(uint256 _amount) onlyOwner external {
         require(_amount <= address(this).balance, "Not enough balance");
         payable(msg.sender).transfer(_amount);
-        emit WithdrawETH(_amount);
+        emit WithdrawNativeCurrency(_amount);
     }
 
     function poolConfigOf(address _poolId) external view returns (PoolConfig memory) {

@@ -18,8 +18,8 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
     event BatchDraw(uint256 indexed poolId, uint256 size, bytes32 requestId);
     event GetRarePrize(uint256 indexed poolId, address indexed user);
     event GetNormalPrize(uint256 indexed poolId, address indexed user, address token, uint256 value);
-    event Withdraw(address indexed token, uint256 value);
-    event WithdrawETH(uint256 value);
+    event WithdrawERC20(address indexed token, uint256 value);
+    event WithdrawNativeCurrency(uint256 value);
     event Refund(address indexed user, address indexed token, uint256 value);
 
     address public airnode;
@@ -229,16 +229,16 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
         }
     }
 
-    function withdraw(address token, uint256 amount) onlyOwner external {
+    function withdrawERC20(address token, uint256 amount) onlyOwner external {
         require(amount <= ERC20(token).balanceOf(address(this)), "Not enough balance");
         ERC20(token).transfer(msg.sender, amount);
-        emit Withdraw(token, amount);
+        emit WithdrawWRC20(token, amount);
     }
 
-    function withdrawETH(uint256 amount) onlyOwner external {
+    function withdrawNativeCurrency(uint256 amount) onlyOwner external {
         require(amount <= address(this).balance, "Not enough balance");
         payable(msg.sender).transfer(amount);
-        emit WithdrawETH(amount);
+        emit WithdrawNativeCurrency(amount);
     }
 
     function rpOf(address _user, uint256 _poolId) external view returns (uint256) {
