@@ -1,4 +1,4 @@
-import { ethers } from "hardhat";
+import { ethers, upgrades } from "hardhat";
 
 const AirnodeRrpV0: Record<number, string> = {
   5: "0xa0AD79D995DdeeB18a14eAef56A549A04e3Aa1Bd",
@@ -20,31 +20,17 @@ const AirnodeRrpV0: Record<number, string> = {
 async function main() {
   const chainId = (await ethers.provider.getNetwork()).chainId;
   console.log("Chain ID:", chainId);
+  const gas = await ethers.provider.getGasPrice();
+  console.log("Gas price:", gas.toString());
   const airnodeRrp = AirnodeRrpV0[chainId];
   console.log("AirnodeRrpV0:", airnodeRrp);
-  const Snatch = await ethers.getContractFactory("Snatch");
-  console.log("Deploying Snatch...");
-  // const snatcher = await Snatch.deploy(airnodeRrp);
-  // await snatcher.deployed();
-  const snatcher = await Snatch.attach(
-    "0x6040181fdf1281d9dAb495D2A576eC62c248a68F"
-  );
-  console.log("Snatch deployed to:", snatcher.address);
-  console.log("You need to get sponsor-address. The code is:");
-  // // https://docs.api3.org/qrng/reference/providers.html#airnode
-  console.log(`npx @api3/airnode-admin derive-sponsor-wallet-address \
-  --airnode-xpub xpub6DXSDTZBd4aPVXnv6Q3SmnGUweFv6j24SK77W4qrSFuhGgi666awUiXakjXruUSCDQhhctVG7AQt67gMdaRAsDnDXv23bBRKsMWvRzo6kbf \
-  --airnode-address 0x9d3C147cA16DB954873A498e0af5852AB39139f2 \
-  --sponsor-address ${snatcher.address}`);
-  console.log("transferDO done");
-  // setRequestParameters
-  // await snatcher.setRequestParameters(
-  //   "0x9d3C147cA16DB954873A498e0af5852AB39139f2",
-  //   "0xfb6d017bb87991b7495f563db3c8cf59ff87b09781947bb1e417006ad7f55a78",
-  //   "0x27cc2713e7f968e4e86ed274a051a5c8aaee9cca66946f23af6f29ecea9704c3",
-  //   "0xbFeae35e2D83afD10dd0acbA576dF722ff86282E"
-  // );
-  console.log("setRequestParameters done");
+  const SnatchV1 = await ethers.getContractFactory("SnatchV1");
+  console.log("Deploying SnatchV1...");
+  const snatchV1 = await upgrades.deployProxy(SnatchV1, [airnodeRrp], {
+    initializer: "initialize",
+  });
+  await snatchV1.deployed();
+  console.log("SnatchV1 deployed to:", snatchV1.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

@@ -1,12 +1,14 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
-import "@api3/airnode-protocol/contracts/rrp/requesters/RrpRequesterV0.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "./interfaces/IFourDucks.sol";
+import "../interfaces/IFourDucks.sol";
+import "../lib/RrpRequesterV0Upgradeable.sol";
 
-contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
+contract FourDucksV1 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeable, UUPSUpgradeable, IFourDucks {
     event RequestedUint256(address indexed poolId, bytes32 indexed requestId);
     event ReceivedUint256(address indexed poolId, bytes32 indexed requestId, uint256 response);
     event Stake(address indexed poolId, address indexed player, address token, int256 amount);
@@ -22,11 +24,16 @@ contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
     mapping(address => PoolConfig) private poolConfigMap;
     mapping(bytes32 => StakeRequest) private stakeRequestMap;
 
-    /// @dev RrpRequester sponsors itself, meaning that it can make requests
-    /// that will be fulfilled by its sponsor wallet. See the Airnode protocol
-    /// docs about sponsorship for more information.
-    /// @param _airnodeRrp Airnode RRP contract address, view https://docs.api3.org/qrng/reference/chains.html
-    constructor(address _airnodeRrp) RrpRequesterV0(_airnodeRrp) {}
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(address _airnodeRrp) initializer public {
+        __RrpRequesterV0_init(_airnodeRrp);
+        __Ownable_init();
+        __UUPSUpgradeable_init();
+    }
 
     /// @notice Sets parameters used in requesting QRNG services
     /// @param _airnode Airnode address
@@ -176,4 +183,10 @@ contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
     function stakeRequestOf(bytes32 requestId) external view returns (StakeRequest memory) {
         return stakeRequestMap[requestId];
     }
+
+    function _authorizeUpgrade(address newImplementation)
+    internal
+    onlyOwner
+    override
+    {}
 }

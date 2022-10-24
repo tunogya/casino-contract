@@ -1,4 +1,4 @@
-import { ethers } from "hardhat";
+import { ethers, upgrades } from "hardhat";
 
 const AirnodeRrpV0: Record<number, string> = {
   5: "0xa0AD79D995DdeeB18a14eAef56A549A04e3Aa1Bd",
@@ -20,29 +20,17 @@ const AirnodeRrpV0: Record<number, string> = {
 async function main() {
   const chainId = (await ethers.provider.getNetwork()).chainId;
   console.log("Chain ID:", chainId);
+  const gas = await ethers.provider.getGasPrice();
+  console.log("Gas price:", gas.toString());
   const airnodeRrp = AirnodeRrpV0[chainId];
   console.log("AirnodeRrpV0:", airnodeRrp);
-  const FourDucks = await ethers.getContractFactory("FourDucks");
+  const FourDucksV1 = await ethers.getContractFactory("FourDucksV1");
   console.log("Deploying FourDucks...");
-  const fourDucks = await FourDucks.deploy(airnodeRrp);
-  await fourDucks.deployed();
-  // const fourDucks = await FourDucks.attach(
-  //   "0xcB12ee888B4Fd3e7ff29612087F093bD9Ee4f606"
-  // );
-  console.log("FourDucks deployed to:", fourDucks.address);
-  console.log("You need to get sponsor-address. The code is:");
-  // // https://docs.api3.org/qrng/reference/providers.html#airnode
-  console.log(`npx @api3/airnode-admin derive-sponsor-wallet-address \
-  --airnode-xpub xpub6DXSDTZBd4aPVXnv6Q3SmnGUweFv6j24SK77W4qrSFuhGgi666awUiXakjXruUSCDQhhctVG7AQt67gMdaRAsDnDXv23bBRKsMWvRzo6kbf \
-  --airnode-address 0x9d3C147cA16DB954873A498e0af5852AB39139f2 \
-  --sponsor-address ${fourDucks.address}`);
-
-  // await fourDucks.setRequestParameters(
-  //   "0x9d3C147cA16DB954873A498e0af5852AB39139f2",
-  //   "0xfb6d017bb87991b7495f563db3c8cf59ff87b09781947bb1e417006ad7f55a78",
-  //   "0xa41f03FE80C21C767e9828E64F2b8B2E8D00f6F3"
-  // );
-  console.log("setRequestParameters done");
+  const fourDucksV1 = await upgrades.deployProxy(FourDucksV1, [airnodeRrp], {
+    initializer: "initialize",
+  });
+  await fourDucksV1.deployed();
+  console.log("FourDucks deployed to:", fourDucksV1.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

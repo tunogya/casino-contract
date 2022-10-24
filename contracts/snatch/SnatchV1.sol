@@ -1,13 +1,15 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
-import "@api3/airnode-protocol/contracts/rrp/requesters/RrpRequesterV0.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "./interfaces/ISnatch.sol";
+import "../interfaces/ISnatch.sol";
+import "../lib/RrpRequesterV0Upgradeable.sol";
 
-contract Snatch is RrpRequesterV0, ISnatch, Ownable {
+contract SnatchV1 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeable, UUPSUpgradeable, ISnatch {
     using Counters for Counters.Counter;
 
     event RequestedUint256(uint256 indexed poolId, bytes32 indexed requestId);
@@ -31,11 +33,16 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
 
     Counters.Counter private poolIdCounter;
 
-    /// @dev RrpRequester sponsors itself, meaning that it can make requests
-    /// that will be fulfilled by its sponsor wallet. See the Airnode protocol
-    /// docs about sponsorship for more information.
-    /// @param _airnodeRrp Airnode RRP contract address, view https://docs.api3.org/qrng/reference/chains.html
-    constructor(address _airnodeRrp) RrpRequesterV0(_airnodeRrp) {}
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(address _airnodeRrp) initializer public {
+        __RrpRequesterV0_init(_airnodeRrp);
+        __Ownable_init();
+        __UUPSUpgradeable_init();
+    }
 
     /// @notice Sets parameters used in requesting QRNG services
     /// @param _airnode Airnode address
@@ -267,4 +274,10 @@ contract Snatch is RrpRequesterV0, ISnatch, Ownable {
     function drawRequestOf(bytes32 _requestId) external view returns (DrawRequest memory) {
         return drawRequestMap[_requestId];
     }
+
+    function _authorizeUpgrade(address newImplementation)
+    internal
+    onlyOwner
+    override
+    {}
 }
