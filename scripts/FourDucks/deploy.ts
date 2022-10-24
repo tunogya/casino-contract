@@ -25,7 +25,7 @@ async function main() {
   const airnodeRrp = AirnodeRrpV0[chainId];
   console.log("AirnodeRrpV0:", airnodeRrp);
   const FourDucksV1 = await ethers.getContractFactory("FourDucksV1");
-  console.log("Deploying FourDucks...");
+  console.log("Deploying FourDucksV1...");
   const fourDucksV1 = await upgrades.deployProxy(FourDucksV1, [airnodeRrp], {
     initializer: "initialize",
   });
