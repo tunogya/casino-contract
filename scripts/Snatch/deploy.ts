@@ -30,7 +30,7 @@ async function main() {
     initializer: "initialize",
   });
   await snatchV1.deployed();
-  console.log("SnatchV1 deployed to:", snatchV1.address);
+  console.log("SnatchV1 proxy deployed to:", snatchV1.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

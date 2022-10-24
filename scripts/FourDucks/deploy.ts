@@ -30,7 +30,7 @@ async function main() {
     initializer: "initialize",
   });
   await fourDucksV1.deployed();
-  console.log("FourDucks deployed to:", fourDucksV1.address);
+  console.log("FourDucks proxy deployed to:", fourDucksV1.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
