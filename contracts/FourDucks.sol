@@ -75,10 +75,9 @@ contract FourDucks is RrpRequesterV0, IFourDucks, Ownable {
         } else {
             require(ERC20(_token).transferFrom(msg.sender, address(this), _abs(_amount)), "FourDucks: transferFrom failed");
         }
-
-        config.players[config.players.length] = msg.sender;
-        config.tokens[config.players.length] = _token;
-        config.amount[config.players.length] = _amount;
+        config.players.push(msg.sender);
+        config.tokens.push(_token);
+        config.amount.push(_amount);
         emit Stake(_poolId, msg.sender, _token, _amount);
 
         if (config.players.length == 4) {
