@@ -11,13 +11,16 @@ import "../lib/RrpRequesterV0Upgradeable.sol";
 contract FourDucksV1 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeable, UUPSUpgradeable, IFourDucks {
     event RequestedUint256(address indexed poolId, bytes32 indexed requestId);
     event ReceivedUint256(address indexed poolId, bytes32 indexed requestId, uint256 response);
-    event Stake(address indexed poolId, address indexed player, address token, int256 amount);
-    event SetFee(uint256 value);
+    event SoloStake(address indexed poolId, address indexed player, address token, int256 amount);
+    event PooledStake(address indexed poolId, address indexed player, address token, int256 amount);
+    event SetPlatformFee(uint256 value);
+    event SetSponsorFee(uint256 value);
 
     address public airnode;
     bytes32 public endpointIdUint256;
     address public sponsorWallet;
-    uint256 public fee;
+    uint256 public platformFee;
+    uint256 public sponsorFee;
 
     address public constant NATIVE_CURRENCY = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
@@ -49,11 +52,15 @@ contract FourDucksV1 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgrade
         sponsorWallet = _sponsorWallet;
     }
 
-    function setFee(uint256 _value) onlyOwner external {
-        require(_value <= 1 ether, "Fee must be less than 1 ether");
+    function setPlatformFee(uint256 _value) onlyOwner external {
+        require(_value <= 1 ether, "Platform Fee must be less than 1 ether");
+        platformFee = _value;
+        emit SetPlatformFee(_value);
+    }
 
-        fee = _value;
-        emit SetFee(_value);
+    function setSponsorFee(uint256 _value) onlyOwner external {
+        sponsorFee = _value;
+        emit SetPlatformFee(_value);
     }
 
     function _eligibilityOf(address _poolId, address _player) internal view returns (bool eligibility) {
@@ -71,7 +78,40 @@ contract FourDucksV1 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgrade
         return x >= 0 ? uint256(x) : uint256(- x);
     }
 
-    function stake(address _poolId, address _token, int256 _amount) payable external {
+    function soloStake(address _poolId, address _token, int256 _amount) payable external {
+        PoolConfig storage config = poolConfigMap[_poolId];
+        require(config.players.length == 0, "FourDucks: Pool is not empty");
+        require(_abs(_amount) > 0, "FourDucks: amount must be greater than 0");
+        require(msg.value >= sponsorFee, "FourDucks: soloFee is not enough");
+
+        if (_token == NATIVE_CURRENCY) {
+            require(msg.value >= _abs(_amount) + sponsorFee, "FourDucks: amount is not enough");
+            // transfer sponsor fee to sponsor wallet
+        } else {
+            require(ERC20(_token).transferFrom(msg.sender, address(this), _abs(_amount)), "FourDucks: transferFrom failed");
+        }
+        (bool success, ) = sponsorWallet.call{value: sponsorFee}("");
+        require(success, "FourDucks: transfer sponsor fee failed");
+
+        config.players.push(msg.sender);
+        config.tokens.push(_token);
+        config.amount.push(_amount);
+        emit SoloStake(_poolId, msg.sender, _token, _amount);
+
+        bytes32 requestId = airnodeRrp.makeFullRequest(
+            airnode,
+            endpointIdUint256,
+            address(this),
+            sponsorWallet,
+            address(this),
+            this.fulfillUint256.selector,
+            ""
+        );
+        stakeRequestMap[requestId] = StakeRequest(_poolId, true);
+        emit RequestedUint256(_poolId, requestId);
+    }
+
+    function pooledStake(address _poolId, address _token, int256 _amount) payable external {
         PoolConfig storage config = poolConfigMap[_poolId];
         require(config.players.length < 4, "FourDucks: max players count is 4");
         require(_eligibilityOf(_poolId, msg.sender), "FourDucks: no eligibility");
@@ -85,7 +125,7 @@ contract FourDucksV1 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgrade
         config.players.push(msg.sender);
         config.tokens.push(_token);
         config.amount.push(_amount);
-        emit Stake(_poolId, msg.sender, _token, _amount);
+        emit PooledStake(_poolId, msg.sender, _token, _amount);
 
         if (config.players.length == 4) {
             bytes32 requestId = airnodeRrp.makeFullRequest(
@@ -160,7 +200,7 @@ contract FourDucksV1 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgrade
                 if (balance < amount) {
                     amount = balance;
                 }
-                ERC20(config.tokens[i]).transfer(config.players[i], amount * 2 * (1 ether - fee) / 1 ether);
+                ERC20(config.tokens[i]).transfer(config.players[i], amount * 2 * (1 ether - platformFee) / 1 ether);
             }
         }
         delete poolConfigMap[_poolId];
