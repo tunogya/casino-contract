@@ -82,11 +82,10 @@ contract FourDucksV1 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgrade
         PoolConfig storage config = poolConfigMap[_poolId];
         require(config.players.length == 0, "FourDucks: Pool is not empty");
         require(_abs(_amount) > 0, "FourDucks: amount must be greater than 0");
-        require(msg.value >= sponsorFee, "FourDucks: soloFee is not enough");
+        require(msg.value >= sponsorFee, "FourDucks: sponsor fee is not enough");
 
         if (_token == NATIVE_CURRENCY) {
-            require(msg.value >= _abs(_amount) + sponsorFee, "FourDucks: amount is not enough");
-            // transfer sponsor fee to sponsor wallet
+            require(msg.value >= _abs(_amount) + sponsorFee, "FourDucks: eth amount is not enough");
         } else {
             require(ERC20(_token).transferFrom(msg.sender, address(this), _abs(_amount)), "FourDucks: transferFrom failed");
         }
@@ -193,7 +192,7 @@ contract FourDucksV1 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgrade
 
     function _settle(address _poolId, bool unified) internal {
         PoolConfig storage config = poolConfigMap[_poolId];
-        for (uint256 i = 0; i < 4; i++) {
+        for (uint256 i = 0; i < config.players.length; i++) {
             if (config.amount[i] > 0 && unified || config.amount[i] < 0 && !unified) {
                 uint256 balance = ERC20(config.tokens[i]).balanceOf(address(this));
                 uint256 amount = _abs(config.amount[i]);
