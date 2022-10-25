@@ -11,7 +11,6 @@ async function main() {
     "0x39e55b5E450b4e18d993B446C83086423e2E93F0",
     SnatchV2
   );
-  await snatchV2.deployed();
   console.log("Snatch proxy deployed to:", snatchV2.address);
 }
 
