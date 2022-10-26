@@ -113,7 +113,7 @@ contract FourDucksV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgrade
         require(_abs(_amount) > 0, "FourDucks: amount must be greater than 0");
 
         if (_token == NATIVE_CURRENCY) {
-            require(msg.value >= _abs(_amount), "FourDucks: msg.value must be equal to amount");
+            require(msg.value >= _abs(_amount), "FourDucks: eth amount is not enough");
         } else {
             require(ERC20(_token).transferFrom(msg.sender, address(this), _abs(_amount)), "FourDucks: transferFrom failed");
         }
