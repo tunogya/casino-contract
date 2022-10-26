@@ -9,8 +9,8 @@ import "../interfaces/IFourDucks.sol";
 import "../lib/RrpRequesterV0Upgradeable.sol";
 
 contract FourDucksV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeable, UUPSUpgradeable, IFourDucks {
-    event RequestedUint256(address indexed poolId, bytes32 indexed requestId);
-    event ReceivedUint256(address indexed poolId, bytes32 indexed requestId, uint256 response);
+    event RequestedUint256(address indexed poolId, bytes32 requestId);
+    event ReceivedUint256(bytes32 indexed requestId, address indexed poolId, bytes data);
     event SoloStake(address indexed poolId, address indexed player, address token, int256 amount);
     event PooledStake(address indexed poolId, address indexed player, address token, int256 amount);
     event SetPlatformFee(uint256 value);
@@ -156,6 +156,7 @@ contract FourDucksV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgrade
             "Request ID not known"
         );
         stakeRequestMap[requestId].data = data;
+        emit ReceivedUint256(requestId, stakeRequestMap[requestId].poolId, data);
     }
 
     function claim(bytes32 requestId) external {
@@ -166,8 +167,6 @@ contract FourDucksV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgrade
         bytes memory data = stakeRequestMap[requestId].data;
         uint256 qrngUint256 = abi.decode(data, (uint256));
         address poolId = stakeRequestMap[requestId].poolId;
-        emit ReceivedUint256(poolId, requestId, qrngUint256);
-
         uint256[] memory ducksCoordinates = new uint256[](4);
         for (uint256 i = 0; i < 4; i++) {
             ducksCoordinates[i] = qrngUint256 & 0xffffffff;

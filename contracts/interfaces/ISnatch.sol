@@ -21,19 +21,22 @@ interface ISnatch {
         address requester;              // requester address
         uint256 poolId;                 // pool id
         bool isWaitingFulfill;          // is waiting fulfill
+        bytes data;                     // qrng data
     }
 
+    function batchDraw(uint256 _poolId) payable external;
+
+    function claim(bytes32 requestId) external;
+
     function createPool(PoolConfig memory config) external returns (uint256 poolId);
+
+    function draw(uint256 _poolId) payable external;
+
+    function nextPoolId() external view returns (uint256 poolId);
 
     // @dev When paymentToken updated, the totalFeeValue will be reset to 0 and auto withdraw all fee to the owner of the pool
     // If update the pool share, will deposit the new share to the pool, new share >= old share
     function setPoolConfig(uint256 _poolId, PoolConfig memory config) external;
-
-    function nextPoolId() external view returns (uint256 poolId);
-
-    function draw(uint256 _poolId) payable external;
-
-    function batchDraw(uint256 _poolId) payable external;
 
     function withdraw(address token, uint256 amount) external;
 }

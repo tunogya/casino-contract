@@ -14,6 +14,8 @@ interface IFourDucks {
         bytes data;                  // qrng data
     }
 
+    function claim(bytes32 requestId) external;
+
     // 10% = 1e17
     function setPlatformFee(uint256 _value) external;
 
@@ -21,11 +23,9 @@ interface IFourDucks {
 
     function soloStake(address _poolId, address _token, int256 _amount) payable external;
 
-    function claim(bytes32 requestId) external;
-
     function pooledStake(address _poolId, address _token, int256 _amount) payable external;
 
-    function withdraw(address _token, uint256 _amount) external;
-
     function poolConfigOf(address _poolId) external view returns (PoolConfig memory);
+
+    function withdraw(address _token, uint256 _amount) external;
 }

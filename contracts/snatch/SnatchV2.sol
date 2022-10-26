@@ -12,10 +12,8 @@ import "../lib/RrpRequesterV0Upgradeable.sol";
 contract SnatchV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeable, UUPSUpgradeable, ISnatch {
     using Counters for Counters.Counter;
 
-    event RequestedUint256(uint256 indexed poolId, bytes32 indexed requestId);
-    event ReceivedUint256(bytes32 indexed requestId, uint256 response);
-    event RequestedUint256Array(uint256 indexed poolId, uint256 size, bytes32 indexed requestId);
-    event ReceivedUint256Array(bytes32 indexed requestId, uint256[] response);
+    event RequestedUint256Array(uint256 indexed poolId, address indexed requester, bytes32 requestId);
+    event ReceivedUint256Array(bytes32 indexed requestId, address indexed requester, bytes data);
 
     address public airnode;
     bytes32 public endpointIdUint256;
@@ -46,17 +44,14 @@ contract SnatchV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeabl
 
     /// @notice Sets parameters used in requesting QRNG services
     /// @param _airnode Airnode address
-    /// @param _endpointIdUint256 Endpoint ID used to request a `uint256`
     /// @param _endpointIdUint256Array Endpoint ID used to request a `uint256[]`
     /// @param _sponsorWallet Sponsor wallet address
     function setRequestParameters(
         address _airnode,
-        bytes32 _endpointIdUint256,
         bytes32 _endpointIdUint256Array,
         address _sponsorWallet
     ) onlyOwner external {
         airnode = _airnode;
-        endpointIdUint256 = _endpointIdUint256;
         endpointIdUint256Array = _endpointIdUint256Array;
         sponsorWallet = _sponsorWallet;
     }
@@ -83,22 +78,25 @@ contract SnatchV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeabl
         PoolConfig memory config = poolConfigMap[_poolId];
 
         if (config.paymentToken != NATIVE_CURRENCY) {
-            require(ERC20(config.paymentToken).transferFrom(msg.sender, address(this), config.singleDrawPrice), "Transfer failed");
+            require(ERC20(config.paymentToken).transferFrom(msg.sender, address(this), config.batchDrawPrice), "Transfer failed");
         } else {
-            require(msg.value == config.singleDrawPrice, "Invalid value");
+            require(msg.value >= config.batchDrawPrice, "Invalid value");
         }
 
         bytes32 requestId = airnodeRrp.makeFullRequest(
             airnode,
-            endpointIdUint256,
+            endpointIdUint256Array,
             address(this),
             sponsorWallet,
             address(this),
-            this.fulfillUint256.selector,
-            ""
+            this.fulfillUint256Array.selector,
+            abi.encode(bytes32("1u"), bytes32("size"), 1)
         );
-        drawRequestMap[requestId] = DrawRequest(msg.sender, _poolId, true);
-        emit RequestedUint256(_poolId, requestId);
+
+        drawRequestMap[requestId].requester = msg.sender;
+        drawRequestMap[requestId].poolId = _poolId;
+        drawRequestMap[requestId].isWaitingFulfill = true;
+        emit RequestedUint256Array(_poolId, msg.sender, requestId);
     }
 
     function batchDraw(uint256 _poolId) payable external {
@@ -120,8 +118,10 @@ contract SnatchV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeabl
             this.fulfillUint256Array.selector,
             abi.encode(bytes32("1u"), bytes32("size"), config.batchDrawSize)
         );
-        drawRequestMap[requestId] = DrawRequest(msg.sender, _poolId, true);
-        emit RequestedUint256Array(_poolId, config.batchDrawSize, requestId);
+        drawRequestMap[requestId].poolId = _poolId;
+        drawRequestMap[requestId].requester = msg.sender;
+        drawRequestMap[requestId].isWaitingFulfill = true;
+        emit RequestedUint256Array(_poolId, msg.sender, requestId);
     }
 
     function _calculateP(uint256 _poolId, uint256 _rp) internal view returns (uint256) {
@@ -131,24 +131,6 @@ contract SnatchV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeabl
         }
 
         return config.rarePrizeInitRate + config.rarePrizeRateD * _rp;
-    }
-
-    /// @notice Called by the Airnode through the AirnodeRrp contract to
-    /// fulfill the request
-    /// @dev Note the `onlyAirnodeRrp` modifier. You should only accept RRP
-    /// fulfillments from this protocol contract. Also note that only
-    /// fulfillments for the requests made by this contract are accepted, and
-    /// a request cannot be responded to multiple times.
-    /// @param requestId Request IDw
-    /// @param data ABI-encoded response
-    function fulfillUint256(bytes32 requestId, bytes calldata data)
-    external
-    onlyAirnodeRrp
-    {
-        uint256 qrngUint256 = abi.decode(data, (uint256));
-        emit ReceivedUint256(requestId, qrngUint256);
-        _settle(requestId, qrngUint256);
-        drawRequestMap[requestId].isWaitingFulfill = false;
     }
 
     /// @notice Called by the Airnode through the AirnodeRrp contract to
@@ -163,14 +145,22 @@ contract SnatchV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeabl
             drawRequestMap[requestId].isWaitingFulfill,
             "Request ID not known"
         );
-        uint256[] memory qrngUint256Array = abi.decode(data, (uint256[]));
-        emit ReceivedUint256Array(requestId, qrngUint256Array);
+        drawRequestMap[requestId].data = data;
+        emit ReceivedUint256Array(requestId, drawRequestMap[requestId].requester, data);
+    }
 
+    function claim(bytes32 requestId) external {
+        require(
+            drawRequestMap[requestId].isWaitingFulfill,
+            "Request ID not known"
+        );
+        bytes memory data = drawRequestMap[requestId].data;
+        uint256[] memory qrngUint256Array = abi.decode(data, (uint256[]));
         for (uint256 j = 0; j < qrngUint256Array.length; j++) {
             uint256 qrngUint256 = qrngUint256Array[j];
             _settle(requestId, qrngUint256);
         }
-        drawRequestMap[requestId].isWaitingFulfill = false;
+        delete drawRequestMap[requestId];
     }
 
     function _settle(bytes32 requestId, uint256 qrngUint256)
