@@ -74,10 +74,6 @@ contract FourDucksV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgrade
         }
     }
 
-    function _abs(int256 x) private pure returns (uint256) {
-        return x >= 0 ? uint256(x) : uint256(- x);
-    }
-
     function soloStake(address _poolId, address _token, int256 _amount) payable external {
         PoolConfig storage config = poolConfigMap[_poolId];
         require(config.players.length < 4, "FourDucks: max players count is 4");
@@ -162,36 +158,41 @@ contract FourDucksV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgrade
         address poolId = stakeRequestMap[requestId].poolId;
         emit ReceivedUint256(poolId, requestId, qrngUint256);
 
-        uint256[] memory ducksCoordinates = new uint256[](8);
-        uint256 max;
-        uint256 min;
-        for (uint256 i = 0; i < 8; i++) {
+        uint256[] memory ducksCoordinates = new uint256[](4);
+        for (uint256 i = 0; i < 4; i++) {
             ducksCoordinates[i] = qrngUint256 & 0xffffffff;
-            if (i % 2 == 0) {
-                if (i == 0) {
-                    max = ducksCoordinates[i];
-                    min = ducksCoordinates[i];
-                } else {
-                    if (ducksCoordinates[i] > max) {
-                        max = ducksCoordinates[i];
-                    }
-                    if (ducksCoordinates[i] < min) {
-                        min = ducksCoordinates[i];
-                    }
-                }
-            }
-            qrngUint256 = qrngUint256 >> 32;
+            qrngUint256 = qrngUint256 >> 64;
         }
 
-        if (max - min <= 0x80000000) {
+        bool result = _distance(ducksCoordinates[0], ducksCoordinates[1], 2 ** 32) <= 2 ** 31 &&
+        _distance(ducksCoordinates[0], ducksCoordinates[2], 2 ** 32) <= 2 ** 31 &&
+        _distance(ducksCoordinates[0], ducksCoordinates[3], 2 ** 32) <= 2 ** 31 &&
+        _distance(ducksCoordinates[1], ducksCoordinates[2], 2 ** 32) <= 2 ** 31 &&
+        _distance(ducksCoordinates[1], ducksCoordinates[3], 2 ** 32) <= 2 ** 31 &&
+        _distance(ducksCoordinates[2], ducksCoordinates[3], 2 ** 32) <= 2 ** 31;
+
+        if (result) {
             _settle(poolId, true);
         } else {
             _settle(poolId, false);
         }
     }
 
+    function _distance(uint256 a, uint256 b, uint256 mod) internal pure returns (uint256) {
+        uint256 d = _abs(a - b);
+        return d > mod / 2 ? mod - d : d;
+    }
+
+    function _max(uint256 a, uint256 b) private pure returns (uint256) {
+        return a > b ? a : b;
+    }
+
     function _min(uint256 a, uint256 b) private pure returns (uint256) {
         return a < b ? a : b;
+    }
+
+    function _abs(int256 x) private pure returns (uint256) {
+        return x >= 0 ? uint256(x) : uint256(- x);
     }
 
     function _settle(address _poolId, bool unified) internal {
