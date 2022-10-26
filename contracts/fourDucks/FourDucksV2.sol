@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../interfaces/IFourDucks.sol";
 import "../lib/RrpRequesterV0Upgradeable.sol";
 
-contract FourDucksV1 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeable, UUPSUpgradeable, IFourDucks {
+contract FourDucksV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeable, UUPSUpgradeable, IFourDucks {
     event RequestedUint256(address indexed poolId, bytes32 indexed requestId);
     event ReceivedUint256(address indexed poolId, bytes32 indexed requestId, uint256 response);
     event SoloStake(address indexed poolId, address indexed player, address token, int256 amount);
@@ -80,7 +80,7 @@ contract FourDucksV1 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgrade
 
     function soloStake(address _poolId, address _token, int256 _amount) payable external {
         PoolConfig storage config = poolConfigMap[_poolId];
-        require(config.players.length == 0, "FourDucks: Pool is not empty");
+        require(config.players.length < 4, "FourDucks: max players count is 4");
         require(_abs(_amount) > 0, "FourDucks: amount must be greater than 0");
         require(msg.value >= sponsorFee, "FourDucks: sponsor fee is not enough");
 
@@ -89,7 +89,7 @@ contract FourDucksV1 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgrade
         } else {
             require(ERC20(_token).transferFrom(msg.sender, address(this), _abs(_amount)), "FourDucks: transferFrom failed");
         }
-        (bool success, ) = sponsorWallet.call{value: sponsorFee}("");
+        (bool success,) = sponsorWallet.call{value : sponsorFee}("");
         require(success, "FourDucks: transfer sponsor fee failed");
 
         config.players.push(msg.sender);
@@ -190,16 +190,16 @@ contract FourDucksV1 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgrade
         }
     }
 
+    function _min(uint256 a, uint256 b) private pure returns (uint256) {
+        return a < b ? a : b;
+    }
+
     function _settle(address _poolId, bool unified) internal {
         PoolConfig storage config = poolConfigMap[_poolId];
         for (uint256 i = 0; i < config.players.length; i++) {
-            if (config.amount[i] > 0 && unified || config.amount[i] < 0 && !unified) {
-                uint256 balance = ERC20(config.tokens[i]).balanceOf(address(this));
-                uint256 amount = _abs(config.amount[i]);
-                if (balance < amount) {
-                    amount = balance;
-                }
-                ERC20(config.tokens[i]).transfer(config.players[i], amount * 2 * (1 ether - platformFee) / 1 ether);
+            if (config.players[i] != address(0) && config.tokens[i] != address(0) && (config.amount[i] > 0 && unified || config.amount[i] < 0 && !unified)) {
+                uint256 amount = _min(uint256(_abs(config.amount[i])), _safeBalanceOf(config.tokens[i], address(this)));
+                _safeTransfer(config.tokens[i], config.players[i], amount * 2 * (1 ether - platformFee) / 1 ether);
             }
         }
         delete poolConfigMap[_poolId];
@@ -221,6 +221,22 @@ contract FourDucksV1 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgrade
 
     function stakeRequestOf(bytes32 requestId) external view returns (StakeRequest memory) {
         return stakeRequestMap[requestId];
+    }
+
+    function _safeBalanceOf(address _token, address _account) internal view returns (uint256) {
+        if (_token == NATIVE_CURRENCY) {
+            return _account.balance;
+        } else {
+            return ERC20(_token).balanceOf(_account);
+        }
+    }
+
+    function _safeTransfer(address token, address to, uint256 value) internal {
+        if (token == NATIVE_CURRENCY) {
+            payable(to).transfer(value);
+        } else {
+            ERC20(token).transfer(to, value);
+        }
     }
 
     function _authorizeUpgrade(address newImplementation)
