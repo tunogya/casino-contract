@@ -155,11 +155,14 @@ contract FourDucksV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgrade
             stakeRequestMap[requestId].isWaitingFulfill,
             "Request ID not known"
         );
-        stakeRequestMap[requestId].isWaitingFulfill = false;
         stakeRequestMap[requestId].data = data;
     }
 
     function claim(bytes32 requestId) external {
+        require(
+            stakeRequestMap[requestId].isWaitingFulfill,
+            "Request ID not known"
+        );
         bytes memory data = stakeRequestMap[requestId].data;
         uint256 qrngUint256 = abi.decode(data, (uint256));
         address poolId = stakeRequestMap[requestId].poolId;
