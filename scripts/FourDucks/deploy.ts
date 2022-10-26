@@ -24,13 +24,13 @@ async function main() {
   console.log("Gas price:", gas.toString());
   const airnodeRrp = AirnodeRrpV0[chainId];
   console.log("AirnodeRrpV0:", airnodeRrp);
-  const FourDucksV1 = await ethers.getContractFactory("FourDucksV1");
-  console.log("Deploying FourDucksV1...");
-  const fourDucksV1 = await upgrades.deployProxy(FourDucksV1, [airnodeRrp], {
+  const FourDucks = await ethers.getContractFactory("FourDucks");
+  console.log("Deploying FourDucks...");
+  const fourDucks = await upgrades.deployProxy(FourDucks, [airnodeRrp], {
     initializer: "initialize",
   });
-  await fourDucksV1.deployed();
-  console.log("FourDucks proxy deployed to:", fourDucksV1.address);
+  await fourDucks.deployed();
+  console.log("FourDucks proxy deployed to:", fourDucks.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

@@ -24,13 +24,13 @@ async function main() {
   console.log("Gas price:", gas.toString());
   const airnodeRrp = AirnodeRrpV0[chainId];
   console.log("AirnodeRrpV0:", airnodeRrp);
-  const SnatchV1 = await ethers.getContractFactory("SnatchV1");
+  const Snatch = await ethers.getContractFactory("Snatch");
   console.log("Deploying SnatchV1...");
-  const snatchV1 = await upgrades.deployProxy(SnatchV1, [airnodeRrp], {
+  const snatch = await upgrades.deployProxy(Snatch, [airnodeRrp], {
     initializer: "initialize",
   });
-  await snatchV1.deployed();
-  console.log("SnatchV1 proxy deployed to:", snatchV1.address);
+  await snatch.deployed();
+  console.log("Snatch proxy deployed to:", snatch.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

@@ -5,11 +5,11 @@ async function main() {
   console.log("Chain ID:", chainId);
   const gas = await ethers.provider.getGasPrice();
   console.log("Gas price:", gas.toString());
-  const SnatchV2 = await ethers.getContractFactory("SnatchV2");
-  console.log("Upgrade to SnatchV2...");
+  const Snatch = await ethers.getContractFactory("Snatch");
+  console.log("Upgrade to Snatch...");
   const snatchV2 = await upgrades.upgradeProxy(
-    "0x39e55b5E450b4e18d993B446C83086423e2E93F0",
-    SnatchV2
+    "",
+    Snatch
   );
   console.log("Snatch proxy deployed to:", snatchV2.address);
 }
