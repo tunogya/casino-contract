@@ -179,7 +179,7 @@ contract FourDucksV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgrade
     }
 
     function _distance(uint256 a, uint256 b, uint256 mod) internal pure returns (uint256) {
-        uint256 d = _abs(a - b);
+        uint256 d = a > b ? a - b : b - a;
         return d > mod / 2 ? mod - d : d;
     }
 
