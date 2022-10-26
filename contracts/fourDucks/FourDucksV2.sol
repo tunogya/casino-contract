@@ -153,7 +153,6 @@ contract FourDucksV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgrade
             stakeRequestMap[requestId].isWaitingFulfill,
             "Request ID not known"
         );
-        stakeRequestMap[requestId].isWaitingFulfill = false;
         uint256 qrngUint256 = abi.decode(data, (uint256));
         address poolId = stakeRequestMap[requestId].poolId;
         emit ReceivedUint256(poolId, requestId, qrngUint256);
@@ -176,6 +175,7 @@ contract FourDucksV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgrade
         } else {
             _settle(poolId, false);
         }
+        delete stakeRequestMap[requestId];
     }
 
     function _distance(uint256 a, uint256 b, uint256 mod) internal pure returns (uint256) {

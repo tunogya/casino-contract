@@ -148,7 +148,7 @@ contract SnatchV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeabl
         uint256 qrngUint256 = abi.decode(data, (uint256));
         emit ReceivedUint256(requestId, qrngUint256);
         _settle(requestId, qrngUint256);
-        drawRequestMap[requestId].isWaitingFulfill = false;
+        delete drawRequestMap[requestId];
     }
 
     /// @notice Called by the Airnode through the AirnodeRrp contract to
@@ -170,7 +170,7 @@ contract SnatchV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeabl
             uint256 qrngUint256 = qrngUint256Array[j];
             _settle(requestId, qrngUint256);
         }
-        drawRequestMap[requestId].isWaitingFulfill = false;
+        delete drawRequestMap[requestId];
     }
 
     function _settle(bytes32 requestId, uint256 qrngUint256)
