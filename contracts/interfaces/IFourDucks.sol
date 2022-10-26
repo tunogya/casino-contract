@@ -11,6 +11,7 @@ interface IFourDucks {
     struct StakeRequest {
         address poolId;              // pool Id
         bool isWaitingFulfill;       // is waiting fulfill
+        bytes data;                  // qrng data
     }
 
     // 10% = 1e17
@@ -19,6 +20,8 @@ interface IFourDucks {
     function setSponsorFee(uint256 _value) external;
 
     function soloStake(address _poolId, address _token, int256 _amount) payable external;
+
+    function claim(bytes32 requestId) external;
 
     function pooledStake(address _poolId, address _token, int256 _amount) payable external;
 
