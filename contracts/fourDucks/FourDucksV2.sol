@@ -75,8 +75,8 @@ contract FourDucksV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgrade
     }
 
     function soloStake(address _poolId, address _token, int256 _amount) payable external {
+        require(_poolId == msg.sender, "PoolId must be equal to Sender");
         PoolConfig storage config = poolConfigMap[_poolId];
-        require(config.players.length < 4, "FourDucks: max players count is 4");
         require(_abs(_amount) > 0, "FourDucks: amount must be greater than 0");
         require(msg.value >= sponsorFee, "FourDucks: sponsor fee is not enough");
 
@@ -108,7 +108,7 @@ contract FourDucksV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgrade
 
     function pooledStake(address _poolId, address _token, int256 _amount) payable external {
         PoolConfig storage config = poolConfigMap[_poolId];
-        require(config.players.length < 4, "FourDucks: max players count is 4");
+        require(config.players.length < 2, "FourDucks: max players count is 2");
         require(_eligibilityOf(_poolId, msg.sender), "FourDucks: no eligibility");
         require(_abs(_amount) > 0, "FourDucks: amount must be greater than 0");
 
@@ -122,7 +122,7 @@ contract FourDucksV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgrade
         config.amount.push(_amount);
         emit PooledStake(_poolId, msg.sender, _token, _amount);
 
-        if (config.players.length == 4) {
+        if (config.players.length == 2) {
             bytes32 requestId = airnodeRrp.makeFullRequest(
                 airnode,
                 endpointIdUint256,
