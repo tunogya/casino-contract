@@ -63,6 +63,7 @@ contract FourDucksV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgrade
         emit SetPlatformFee(_value);
     }
 
+    // @notice Only stake once per player
     function _eligibilityOf(address _poolId, address _player) internal view returns (bool eligibility) {
         PoolConfig memory config = poolConfigMap[_poolId];
         eligibility = true;
@@ -74,6 +75,7 @@ contract FourDucksV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgrade
         }
     }
 
+    // @notice Solo stake, need poolId = player address and pay the sponsorFee to sponsorWallet
     function soloStake(address _poolId, address _token, int256 _amount) payable external {
         require(_poolId == msg.sender, "PoolId must be equal to Sender");
         PoolConfig storage config = poolConfigMap[_poolId];
@@ -106,9 +108,9 @@ contract FourDucksV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgrade
         emit RequestedUint256(_poolId, requestId);
     }
 
+    // @notice Pooled stake, need >= 2 players, free to pay the sponsorFee.
     function pooledStake(address _poolId, address _token, int256 _amount) payable external {
         PoolConfig storage config = poolConfigMap[_poolId];
-        require(config.players.length < 2, "FourDucks: max players count is 2");
         require(_eligibilityOf(_poolId, msg.sender), "FourDucks: no eligibility");
         require(_abs(_amount) > 0, "FourDucks: amount must be greater than 0");
 
@@ -122,7 +124,8 @@ contract FourDucksV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgrade
         config.amount.push(_amount);
         emit PooledStake(_poolId, msg.sender, _token, _amount);
 
-        if (config.players.length == 2) {
+        // @dev If fulfillUint256() success, it will delete the stakeRequestMap[requestId]. If fulfillUint256() failed, pooledStake again will be ok.
+        if (config.players.length >= 2) {
             bytes32 requestId = airnodeRrp.makeFullRequest(
                 airnode,
                 endpointIdUint256,
@@ -198,7 +201,7 @@ contract FourDucksV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgrade
     function _settle(address _poolId, bool unified) internal {
         PoolConfig storage config = poolConfigMap[_poolId];
         for (uint256 i = 0; i < config.players.length; i++) {
-            if (config.players[i] != address(0) && config.tokens[i] != address(0) && (config.amount[i] > 0 && unified || config.amount[i] < 0 && !unified)) {
+            if (config.amount[i] > 0 && unified || config.amount[i] < 0 && !unified) {
                 uint256 amount = _min(uint256(_abs(config.amount[i])), _safeBalanceOf(config.tokens[i], address(this)));
                 _safeTransfer(config.tokens[i], config.players[i], amount * 2 * (1 ether - platformFee) / 1 ether);
             }
