@@ -13,9 +13,9 @@ contract SnatchV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeabl
     using Counters for Counters.Counter;
 
     event RequestedUint256(uint256 indexed poolId, bytes32 indexed requestId);
-    event ReceivedUint256(bytes32 indexed requestId, uint256 response);
+    event ReceivedUint256(uint256 indexed poolId, bytes32 indexed requestId, uint256 response);
     event RequestedUint256Array(uint256 indexed poolId, uint256 size, bytes32 indexed requestId);
-    event ReceivedUint256Array(bytes32 indexed requestId, uint256[] response);
+    event ReceivedUint256Array(uint256 indexed poolId, bytes32 indexed requestId, uint256[] response);
 
     address public airnode;
     bytes32 public endpointIdUint256;
@@ -146,7 +146,8 @@ contract SnatchV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeabl
     onlyAirnodeRrp
     {
         uint256 qrngUint256 = abi.decode(data, (uint256));
-        emit ReceivedUint256(requestId, qrngUint256);
+        uint256 poolId = drawRequestMap[requestId].poolId;
+        emit ReceivedUint256(poolId, requestId, qrngUint256);
         _settle(requestId, qrngUint256);
         delete drawRequestMap[requestId];
     }
@@ -164,7 +165,8 @@ contract SnatchV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeabl
             "Request ID not known"
         );
         uint256[] memory qrngUint256Array = abi.decode(data, (uint256[]));
-        emit ReceivedUint256Array(requestId, qrngUint256Array);
+        uint256 poolId = drawRequestMap[requestId].poolId;
+        emit ReceivedUint256Array(poolId, requestId, qrngUint256Array);
 
         for (uint256 j = 0; j < qrngUint256Array.length; j++) {
             uint256 qrngUint256 = qrngUint256Array[j];
