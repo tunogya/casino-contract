@@ -8,7 +8,7 @@ async function main() {
   const FourDucks = await ethers.getContractFactory("FourDucks");
   console.log("Upgrade to FourDucksV2...");
   const fourDucks = await upgrades.upgradeProxy(
-    "",
+    "0x97306f1c9679f5DE1c5223F2b2AC8EFBc5BF6caC",
     FourDucks
   );
   console.log("FourDucks proxy deployed to:", fourDucks.address);
