@@ -14,7 +14,7 @@ contract SnatchV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeabl
 
     event RequestedUint256(uint256 indexed poolId, bytes32 indexed requestId);
     event ReceivedUint256(uint256 indexed poolId, bytes32 indexed requestId, uint256 response);
-    event RequestedUint256Array(uint256 indexed poolId, uint256 size, bytes32 indexed requestId);
+    event RequestedUint256Array(uint256 indexed poolId, bytes32 indexed requestId);
     event ReceivedUint256Array(uint256 indexed poolId, bytes32 indexed requestId, uint256[] response);
 
     address public airnode;
@@ -121,7 +121,7 @@ contract SnatchV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeabl
             abi.encode(bytes32("1u"), bytes32("size"), config.batchDrawSize)
         );
         drawRequestMap[requestId] = DrawRequest(msg.sender, _poolId, true);
-        emit RequestedUint256Array(_poolId, config.batchDrawSize, requestId);
+        emit RequestedUint256Array(_poolId, requestId);
     }
 
     function _calculateP(uint256 _poolId, uint256 _rp) internal view returns (uint256) {
