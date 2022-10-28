@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../interfaces/IFourDucks.sol";
 import "../lib/RrpRequesterV0Upgradeable.sol";
 
-contract FourDucksV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeable, UUPSUpgradeable, IFourDucks {
+contract FourDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeable, UUPSUpgradeable, IFourDucks {
     event RequestedUint256(address indexed poolId, bytes32 indexed requestId);
     event ReceivedUint256(address indexed poolId, bytes32 indexed requestId, uint256 response);
     event SoloStake(address indexed poolId, address indexed player, address token, int256 amount);

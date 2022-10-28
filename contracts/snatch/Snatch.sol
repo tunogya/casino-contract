@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../interfaces/ISnatch.sol";
 import "../lib/RrpRequesterV0Upgradeable.sol";
 
-contract SnatchV2 is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeable, UUPSUpgradeable, ISnatch {
+contract Snatch is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeable, UUPSUpgradeable, ISnatch {
     using Counters for Counters.Counter;
 
     event RequestedUint256(uint256 indexed poolId, bytes32 indexed requestId);
