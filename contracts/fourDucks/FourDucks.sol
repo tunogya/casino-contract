@@ -202,8 +202,11 @@ contract FourDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeab
         PoolConfig storage config = poolConfigMap[_poolId];
         for (uint256 i = 0; i < config.players.length; i++) {
             if (config.amount[i] > 0 && unified || config.amount[i] < 0 && !unified) {
-                uint256 amount = _min(uint256(_abs(config.amount[i])), _safeBalanceOf(config.tokens[i], address(this)));
-                _safeTransfer(config.tokens[i], config.players[i], amount * 2 * (1 ether - platformFee) / 1 ether);
+                uint256 amount = _min(
+                    uint256(_abs(config.amount[i]) * 2 * (1 ether - platformFee) / 1 ether),
+                    _safeBalanceOf(config.tokens[i], address(this))
+                );
+                _safeTransfer(config.tokens[i], config.players[i], amount);
             }
         }
         delete poolConfigMap[_poolId];
