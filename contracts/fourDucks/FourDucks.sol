@@ -156,7 +156,6 @@ contract FourDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeab
             stakeRequestMap[requestId].isWaitingFulfill,
             "Request ID not known"
         );
-        stakeRequestMap[requestId].isWaitingFulfill = false;
         uint256 qrngUint256 = abi.decode(data, (uint256));
         address poolId = stakeRequestMap[requestId].poolId;
         emit ReceivedUint256(poolId, requestId, qrngUint256);
@@ -179,6 +178,7 @@ contract FourDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeab
         } else {
             _settle(poolId, false);
         }
+        delete stakeRequestMap[requestId];
     }
 
     function _distance(uint256 a, uint256 b, uint256 mod) internal pure returns (uint256) {
@@ -201,7 +201,7 @@ contract FourDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeab
     function _settle(address _poolId, bool unified) internal {
         PoolConfig storage config = poolConfigMap[_poolId];
         for (uint256 i = 0; i < config.players.length; i++) {
-            if (config.players[i] != address(0) && config.tokens[i] != address(0) && (config.amount[i] > 0 && unified || config.amount[i] < 0 && !unified)) {
+            if (config.amount[i] > 0 && unified || config.amount[i] < 0 && !unified) {
                 uint256 amount = _min(uint256(_abs(config.amount[i])), _safeBalanceOf(config.tokens[i], address(this)));
                 _safeTransfer(config.tokens[i], config.players[i], amount * 2 * (1 ether - platformFee) / 1 ether);
             }
