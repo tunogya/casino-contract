@@ -159,26 +159,40 @@ contract FourDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeab
         uint256 qrngUint256 = abi.decode(data, (uint256));
         address poolId = stakeRequestMap[requestId].poolId;
         emit ReceivedUint256(poolId, requestId, qrngUint256);
-
-        uint256[] memory ducksCoordinates = new uint256[](4);
-        for (uint256 i = 0; i < 4; i++) {
-            ducksCoordinates[i] = qrngUint256 & 0xffffffff;
-            qrngUint256 = qrngUint256 >> 64;
-        }
-
-        bool result = _distance(ducksCoordinates[0], ducksCoordinates[1], 2 ** 32) <= 2 ** 31 &&
-        _distance(ducksCoordinates[0], ducksCoordinates[2], 2 ** 32) <= 2 ** 31 &&
-        _distance(ducksCoordinates[0], ducksCoordinates[3], 2 ** 32) <= 2 ** 31 &&
-        _distance(ducksCoordinates[1], ducksCoordinates[2], 2 ** 32) <= 2 ** 31 &&
-        _distance(ducksCoordinates[1], ducksCoordinates[3], 2 ** 32) <= 2 ** 31 &&
-        _distance(ducksCoordinates[2], ducksCoordinates[3], 2 ** 32) <= 2 ** 31;
-
+        bool result = _calculate(qrngUint256);
         if (result) {
             _settle(poolId, true);
         } else {
             _settle(poolId, false);
         }
         delete stakeRequestMap[requestId];
+    }
+
+    function _coordinatesOf(uint256 qrngUint256) pure internal returns (uint256[] memory coordinates) {
+        coordinates = new uint256[](8);
+        for (uint256 i = 0; i < 8; i++) {
+            coordinates[i] = qrngUint256 & 0xffffffff;
+            qrngUint256 = qrngUint256 >> 32;
+        }
+    }
+
+    function coordinatesOf(uint256 qrngUint256) external pure returns (uint256[] memory coordinates) {
+        coordinates = _coordinatesOf(qrngUint256);
+    }
+
+    function _calculate(uint256 qrngUint256) internal pure returns (bool result) {
+        uint256[] memory coordinates = _coordinatesOf(qrngUint256);
+
+        result = _distance(coordinates[0], coordinates[2], 2 ** 32) <= 2 ** 31 &&
+        _distance(coordinates[0], coordinates[4], 2 ** 32) <= 2 ** 31 &&
+        _distance(coordinates[0], coordinates[6], 2 ** 32) <= 2 ** 31 &&
+        _distance(coordinates[2], coordinates[4], 2 ** 32) <= 2 ** 31 &&
+        _distance(coordinates[2], coordinates[6], 2 ** 32) <= 2 ** 31 &&
+        _distance(coordinates[4], coordinates[6], 2 ** 32) <= 2 ** 31;
+    }
+
+    function calculate(uint256 qrngUint256) external pure returns (bool result) {
+        result = _calculate(qrngUint256);
     }
 
     function _distance(uint256 a, uint256 b, uint256 mod) internal pure returns (uint256) {
