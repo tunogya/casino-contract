@@ -182,22 +182,42 @@ contract FourDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeab
 
     function _calculate(uint256 qrngUint256) internal pure returns (bool result) {
         uint256[] memory coordinates = _coordinatesOf(qrngUint256);
-
-        result = _distance(coordinates[0], coordinates[2], 2 ** 32) <= 2 ** 31 &&
-        _distance(coordinates[0], coordinates[4], 2 ** 32) <= 2 ** 31 &&
-        _distance(coordinates[0], coordinates[6], 2 ** 32) <= 2 ** 31 &&
-        _distance(coordinates[2], coordinates[4], 2 ** 32) <= 2 ** 31 &&
-        _distance(coordinates[2], coordinates[6], 2 ** 32) <= 2 ** 31 &&
-        _distance(coordinates[4], coordinates[6], 2 ** 32) <= 2 ** 31;
+        uint256 min = coordinates[0];
+        uint256 max = coordinates[0];
+        for (uint256 i = 0; i < 8; i += 2) {
+            if (coordinates[i] < min) {
+                min = coordinates[i];
+            }
+            if (coordinates[i] > max) {
+                max = coordinates[i];
+            }
+        }
+        if (max - min <= 2 ** 31) {
+            result = true;
+        } else {
+            for (uint256 i = 0; i < 8; i += 2) {
+                coordinates[i] += 2 ** 31;
+            }
+            min = coordinates[0];
+            max = coordinates[0];
+            for (uint256 i = 0; i < 8; i += 2) {
+                if (coordinates[i] < min) {
+                    min = coordinates[i];
+                }
+                if (coordinates[i] > max) {
+                    max = coordinates[i];
+                }
+            }
+            if (max - min <= 2 ** 31) {
+                result = true;
+            } else {
+                result = false;
+            }
+        }
     }
 
     function calculate(uint256 qrngUint256) external pure returns (bool result) {
         result = _calculate(qrngUint256);
-    }
-
-    function _distance(uint256 a, uint256 b, uint256 mod) internal pure returns (uint256) {
-        uint256 d = a > b ? a - b : b - a;
-        return d > mod / 2 ? mod - d : d;
     }
 
     function _max(uint256 a, uint256 b) private pure returns (uint256) {
