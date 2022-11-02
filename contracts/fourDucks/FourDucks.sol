@@ -196,7 +196,7 @@ contract FourDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeab
             result = true;
         } else {
             for (uint256 i = 0; i < 8; i += 2) {
-                coordinates[i] += 2 ** 31;
+                coordinates[i] = (coordinates[i] + 2 ** 31) % 2 ** 32;
             }
             min = coordinates[0];
             max = coordinates[0];
