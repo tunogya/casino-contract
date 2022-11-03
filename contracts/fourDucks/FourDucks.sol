@@ -10,11 +10,11 @@ import "../lib/RrpRequesterV0Upgradeable.sol";
 
 contract FourDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeable, UUPSUpgradeable, IFourDucks {
     event RequestedUint256(address indexed poolId, bytes32 indexed requestId);
-    event ReceivedUint256(address indexed poolId, bytes32 indexed requestId, uint256 response);
-    event SoloStake(address indexed poolId, address indexed player, address token, int256 amount);
-    event PooledStake(address indexed poolId, address indexed player, address token, int256 amount);
-    event SetPlatformFee(uint256 value);
-    event SetSponsorFee(uint256 value);
+    event ReceivedUint256(address indexed poolId, bytes32 indexed requestId, uint256 indexed response);
+    event SoloStake(address indexed poolId, address indexed player, address indexed token, int256 amount);
+    event PooledStake(address indexed poolId, address indexed player, address indexed token, int256 amount);
+    event SetPlatformFee(uint256 indexed value);
+    event SetSponsorFee(uint256 indexed value);
 
     address public airnode;
     bytes32 public endpointIdUint256;
