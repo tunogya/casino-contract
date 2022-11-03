@@ -160,11 +160,7 @@ contract FourDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeab
         address poolId = stakeRequestMap[requestId].poolId;
         emit ReceivedUint256(poolId, requestId, qrngUint256);
         bool result = _calculate(qrngUint256);
-        if (result) {
-            _settle(poolId, true);
-        } else {
-            _settle(poolId, false);
-        }
+        _settle(poolId, result);
         delete stakeRequestMap[requestId];
     }
 
