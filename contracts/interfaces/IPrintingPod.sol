@@ -2,6 +2,11 @@
 pragma solidity 0.8.9;
 
 interface IPrintingPod {
+    struct DrawRequest {
+        address requester;              // requester address
+        bool isWaitingFulfill;          // is waiting fulfill
+    }
+
     struct Blueprint {
         string name;                     // blueprint name
 
@@ -24,6 +29,8 @@ interface IPrintingPod {
     function addBlueprint(Blueprint memory _blueprint) external payable;
 
     function batchAddBlueprints(Blueprint[] memory _blueprints) external payable;
+
+    function draw(uint256 size) external payable;
 
     function withdraw(address _token, uint256 _amount) external;
 }
