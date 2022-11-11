@@ -22,8 +22,6 @@ contract FourDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeab
     uint256 public platformFee;
     uint256 public sponsorFee;
 
-    address public constant NATIVE_CURRENCY = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-
     mapping(address => PoolConfig) private poolConfigMap;
     mapping(bytes32 => StakeRequest) private stakeRequestMap;
 
@@ -82,7 +80,7 @@ contract FourDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeab
         require(_abs(_amount) > 0, "FourDucks: amount must be greater than 0");
         require(msg.value >= sponsorFee, "FourDucks: sponsor fee is not enough");
 
-        if (_token == NATIVE_CURRENCY) {
+        if (_token == address(0)) {
             require(msg.value >= _abs(_amount) + sponsorFee, "FourDucks: eth amount is not enough");
         } else {
             require(ERC20(_token).transferFrom(msg.sender, address(this), _abs(_amount)), "FourDucks: transferFrom failed");
@@ -114,7 +112,7 @@ contract FourDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeab
         require(_eligibilityOf(_poolId, msg.sender), "FourDucks: no eligibility");
         require(_abs(_amount) > 0, "FourDucks: amount must be greater than 0");
 
-        if (_token == NATIVE_CURRENCY) {
+        if (_token == address(0)) {
             require(msg.value >= _abs(_amount), "FourDucks: eth amount is not enough");
         } else {
             require(ERC20(_token).transferFrom(msg.sender, address(this), _abs(_amount)), "FourDucks: transferFrom failed");
@@ -243,7 +241,7 @@ contract FourDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeab
     }
 
     function withdraw(address token, uint256 amount) onlyOwner external {
-        if (token == NATIVE_CURRENCY) {
+        if (token == address(0)) {
             require(amount <= address(this).balance, "Not enough balance");
             payable(msg.sender).transfer(amount);
         } else {
@@ -261,7 +259,7 @@ contract FourDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeab
     }
 
     function _safeBalanceOf(address _token, address _account) internal view returns (uint256) {
-        if (_token == NATIVE_CURRENCY) {
+        if (_token == address(0)) {
             return _account.balance;
         } else {
             return ERC20(_token).balanceOf(_account);
@@ -269,7 +267,7 @@ contract FourDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeab
     }
 
     function _safeTransfer(address token, address to, uint256 value) internal {
-        if (token == NATIVE_CURRENCY) {
+        if (token == address(0)) {
             payable(to).transfer(value);
         } else {
             ERC20(token).transfer(to, value);

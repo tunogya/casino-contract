@@ -7,6 +7,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../interfaces/IPrintingPod.sol";
 
 contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradeable, OwnableUpgradeable, UUPSUpgradeable, IPrintingPod {
@@ -17,6 +18,9 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
     CountersUpgradeable.Counter private _tokenIdCounter;
 
     Blueprint[] public blueprints;
+    bytes32[] public interestTypes;
+
+    mapping(bytes32 => bool) public interestTypeMap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -53,35 +57,65 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
     }
 
     function addInterestType(bytes32 _type) payable external {
+        require(interestTypeMap[_type] == false, "Interest type already exists");
 
+        interestTypeMap[_type] = true;
+        interestTypes.push(_type);
+
+        // add event
     }
 
-    function batchAddInterestType(bytes32[] memory _types) payable external {
+    function batchAddInterestTypes(bytes32[] memory _types) payable external {
+        for (uint256 i = 0; i < _types.length; i++) {
+            bytes32 _type = _types[i];
+            require(interestTypeMap[_type] == false, "Interest type already exists");
 
+            interestTypeMap[_type] = true;
+            interestTypes.push(_type);
+        }
     }
 
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
         return "";
     }
 
-    function getBlueprints() external view returns (Blueprint[] memory) {
-        return blueprints;
-    }
+    function getBlueprints(uint256 offset, uint256 limit) external view returns (Blueprint[] memory) {
+        Blueprint[] memory _blueprints = new Blueprint[](limit);
 
-    function getBlueprint(uint256 _id) external view returns (Blueprint memory) {
-        return blueprints[_id];
+        for (uint256 i = 0; i < limit; i++) {
+            _blueprints[i] = blueprints[offset + i];
+        }
+
+        return _blueprints;
     }
 
     function addBlueprint(Blueprint memory _blueprint) external payable {
-
+        blueprints.push(_blueprint);
     }
 
-    function batchAddBlueprint(Blueprint[] memory _blueprints) external payable {
-
+    function batchAddBlueprints(Blueprint[] memory _blueprints) external payable {
+        for (uint256 i = 0; i < _blueprints.length; i++) {
+            blueprints.push(_blueprints[i]);
+        }
     }
 
-    function withdraw(address _token, uint256 _amount) external {
+    function getInterestTypes(uint256 offset, uint256 limit) external view returns (bytes32[] memory) {
+        bytes32[] memory _interestTypes = new bytes32[](limit);
 
+        for (uint256 i = 0; i < limit; i++) {
+            _interestTypes[i] = interestTypes[offset + i];
+        }
+
+        return _interestTypes;
     }
 
+    function withdraw(address _token, uint256 _amount) onlyOwner external {
+        if (_token == address(0)) {
+            require(_amount <= address(this).balance, "Not enough balance");
+            payable(msg.sender).transfer(_amount);
+        } else {
+            require(_amount <= ERC20(_token).balanceOf(address(this)), "Not enough balance");
+            ERC20(_token).transfer(msg.sender, _amount);
+        }
+    }
 }

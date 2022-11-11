@@ -13,17 +13,17 @@ interface IPrintingPod {
     // @notice Get max interest
     function getMaxInterest() external returns (uint8);
 
+    function getInterestTypes(uint256 offset, uint256 limit) external view returns (bytes32[] memory);
+
     function addInterestType(bytes32 _type) payable external;
 
-    function batchAddInterestType(bytes32[] memory _types) payable external;
+    function batchAddInterestTypes(bytes32[] memory _types) payable external;
 
-    function getBlueprints() external returns (Blueprint[] memory);
-
-    function getBlueprint(uint256 _id) external returns (Blueprint memory);
+    function getBlueprints(uint256 offset, uint256 limit) external view returns (Blueprint[] memory);
 
     function addBlueprint(Blueprint memory _blueprint) external payable;
 
-    function batchAddBlueprint(Blueprint[] memory _blueprints) external payable;
+    function batchAddBlueprints(Blueprint[] memory _blueprints) external payable;
 
     function withdraw(address _token, uint256 _amount) external;
 }

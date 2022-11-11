@@ -22,8 +22,6 @@ contract Snatch is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeable,
     bytes32 public endpointIdUint256Array;
     address public sponsorWallet;
 
-    address public constant NATIVE_CURRENCY = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-
     // poolId => poolConfig
     mapping(uint256 => PoolConfig) private poolConfigMap;
     // address => poolId => rp
@@ -82,10 +80,10 @@ contract Snatch is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeable,
         require(_poolId < poolIdCounter.current(), "Pool does not exist");
         PoolConfig memory config = poolConfigMap[_poolId];
 
-        if (config.paymentToken != NATIVE_CURRENCY) {
-            require(ERC20(config.paymentToken).transferFrom(msg.sender, address(this), config.singleDrawPrice), "Transfer failed");
-        } else {
+        if (config.paymentToken == address(0)) {
             require(msg.value == config.singleDrawPrice, "Invalid value");
+        } else {
+            require(ERC20(config.paymentToken).transferFrom(msg.sender, address(this), config.singleDrawPrice), "Transfer failed");
         }
 
         bytes32 requestId = airnodeRrp.makeFullRequest(
@@ -105,10 +103,10 @@ contract Snatch is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeable,
         require(_poolId < poolIdCounter.current(), "Pool does not exist");
         PoolConfig memory config = poolConfigMap[_poolId];
 
-        if (config.paymentToken != NATIVE_CURRENCY) {
-            require(ERC20(config.paymentToken).transferFrom(msg.sender, address(this), config.batchDrawPrice), "Transfer failed");
-        } else {
+        if (config.paymentToken == address(0)) {
             require(msg.value >= config.batchDrawPrice, "Invalid value");
+        } else {
+            require(ERC20(config.paymentToken).transferFrom(msg.sender, address(this), config.batchDrawPrice), "Transfer failed");
         }
 
         bytes32 requestId = airnodeRrp.makeFullRequest(
@@ -212,7 +210,7 @@ contract Snatch is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeable,
     }
 
     function _safeBalanceOf(address _token, address _account) internal view returns (uint256) {
-        if (_token == NATIVE_CURRENCY) {
+        if (_token == address(0)) {
             return _account.balance;
         } else {
             return ERC20(_token).balanceOf(_account);
@@ -220,7 +218,7 @@ contract Snatch is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeable,
     }
 
     function _safeTransfer(address token, address to, uint256 value) internal {
-        if (token == NATIVE_CURRENCY) {
+        if (token == address(0)) {
             payable(to).transfer(value);
         } else {
             ERC20(token).transfer(to, value);
@@ -228,7 +226,7 @@ contract Snatch is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeable,
     }
 
     function withdraw(address token, uint256 amount) onlyOwner external {
-        if (token == NATIVE_CURRENCY) {
+        if (token == address(0)) {
             require(amount <= address(this).balance, "Not enough balance");
             payable(msg.sender).transfer(amount);
         } else {
