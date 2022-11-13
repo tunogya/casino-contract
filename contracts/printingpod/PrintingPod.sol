@@ -199,11 +199,11 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
         return _blueprints;
     }
 
-    function addBlueprint(Blueprint calldata _blueprint) external payable {
+    function addBlueprint(Blueprint calldata _blueprint) onlyOwner external {
         blueprints.push(_blueprint);
     }
 
-    function batchAddBlueprints(Blueprint[] calldata _blueprints) external payable {
+    function batchAddBlueprints(Blueprint[] calldata _blueprints) onlyOwner external {
         for (uint256 i = 0; i < _blueprints.length; i++) {
             blueprints.push(_blueprints[i]);
         }

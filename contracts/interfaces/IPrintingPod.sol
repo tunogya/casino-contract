@@ -38,9 +38,9 @@ interface IPrintingPod {
 
     function getBlueprints(uint256 offset, uint256 limit) external view returns (Blueprint[] memory);
 
-    function addBlueprint(Blueprint memory _blueprint) external payable;
+    function addBlueprint(Blueprint memory _blueprint) external;
 
-    function batchAddBlueprints(Blueprint[] calldata _blueprints) external payable;
+    function batchAddBlueprints(Blueprint[] calldata _blueprints) external;
 
     function draw(uint256 size) external payable;
 
