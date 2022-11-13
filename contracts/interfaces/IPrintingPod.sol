@@ -12,6 +12,17 @@ interface IPrintingPod {
 
     }
 
+    struct interestDNA {
+        uint8 blueprintIndex;            // dna
+        uint8 interestsSize;             // interests size
+        uint8 interest1Index;            // interest 1 index
+        uint8 interest1Value;            // interest 1 value
+        uint8 interest2Index;            // interest 2 index
+        uint8 interest2Value;            // interest 2 value
+        uint8 interest3Index;            // interest 3 index
+        uint8 interest3Value;            // interest 3 value
+    }
+
     // @notice Upgrade interest by native currency
     function upgradeInterest(uint256 _tokenId) external payable;
 
@@ -33,4 +44,6 @@ interface IPrintingPod {
     function draw(uint256 size) external payable;
 
     function withdraw(address _token, uint256 _amount) external;
+
+    function safeMint(address to, uint256[] calldata indexes) external;
 }

@@ -13,8 +13,8 @@ import "../lib/RrpRequesterV0Upgradeable.sol";
 
 contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradeable, OwnableUpgradeable, UUPSUpgradeable, IPrintingPod, RrpRequesterV0Upgradeable {
     event AddInterestType(bytes32 indexed _type);
-    event RequestedUint256Array(address indexed user, bytes32 indexed requestId);
-    event ReceivedUint256Array(address indexed user, bytes32 indexed requestId, uint256[] indexed response);
+    event RequestedUint256Array(address indexed requester, bytes32 indexed requestId);
+    event ReceivedUint256Array(address indexed requester, bytes32 indexed requestId, uint256[] indexed response);
 
     using CountersUpgradeable for CountersUpgradeable.Counter;
 
@@ -33,13 +33,13 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
     mapping(bytes32 => bool) public interestTypeMap;
 
     // @notice interestRNGs only record current valid data when draw
-    mapping(address => uint256[]) public interestRNGsMap;
+    mapping(address => interestDNA[]) public interestRNGsDNAsMap;
 
     // @notice requestId => DrawRequest
     mapping(bytes32 => DrawRequest) private drawRequestMap;
 
     // @notice tokenId => interestDNA
-    mapping(uint256 => uint256) public printInterestMap;
+    mapping(uint256 => interestDNA) public printInterestDNAMap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -82,16 +82,15 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
         emit RequestedUint256Array(msg.sender, requestId);
     }
 
-    function safeMint(address to, uint256 index) external {
-        require(index < interestRNGsMap[msg.sender].length, "invalid index");
+    function safeMint(address to, uint256[] calldata indexes) external {
+        for (uint256 i = 0; i < indexes.length; i++) {
+            require(indexes[i] < interestRNGsDNAsMap[msg.sender].length, "invalid index");
 
-        uint256 tokenId = _tokenIdCounter.current();
-        printInterestMap[tokenId] = interestRNGsMap[msg.sender][index];
-
-        delete interestRNGsMap[msg.sender];
-
-        _tokenIdCounter.increment();
-        _safeMint(to, tokenId);
+            uint256 tokenId = _tokenIdCounter.current();
+            printInterestDNAMap[tokenId] = interestRNGsDNAsMap[msg.sender][indexes[i]];
+            _safeMint(to, tokenId);
+        }
+        delete interestRNGsDNAsMap[msg.sender];
     }
 
     function _authorizeUpgrade(address newImplementation)
@@ -131,6 +130,16 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
     }
 
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+        interestDNA storage dna = printInterestDNAMap[tokenId];
+
+        string memory blueprint = blueprints[dna.blueprintIndex].name;
+        bytes32 interest1Type = interestTypes[dna.interest1Index];
+        bytes32 interest2Type = interestTypes[dna.interest2Index];
+        bytes32 interest3Type = interestTypes[dna.interest3Index];
+        uint8 interest1Value = dna.interest1Value;
+        uint8 interest2Value = dna.interest2Value;
+        uint8 interest3Value = dna.interest3Value;
+
         return "";
     }
 
@@ -170,6 +179,10 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
         }
     }
 
+    function _min(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a < b ? a : b;
+    }
+
     /// @notice Called by the Airnode through the AirnodeRrp contract to
     /// fulfill the request
     /// @param requestId Request ID
@@ -178,5 +191,36 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
     external
     onlyAirnodeRrp
     {
+        require(
+            drawRequestMap[requestId].isWaitingFulfill,
+            "Request ID not known"
+        );
+        uint256[] memory qrngUint256Array = abi.decode(data, (uint256[]));
+        address requester = drawRequestMap[requestId].requester;
+        emit ReceivedUint256Array(requester, requestId, qrngUint256Array);
+
+        delete interestRNGsDNAsMap[requester];
+        uint256 interestTypesCount = interestTypes.length;
+        for (uint256 i = 0; i < qrngUint256Array.length; i++) {
+            uint256 interestRNG = qrngUint256Array[i];
+            uint8 blueprintIndex = uint8(uint256(interestRNG % blueprints.length));
+            uint8 interestsSize = uint8(uint256(interestRNG % _min(3, interestTypesCount)) + 1);
+            uint8 value = 10;
+            uint8 interest1Index = uint8(uint256(keccak256(abi.encodePacked(interestRNG + 0))) % interestTypesCount);
+            uint8 interest2Index;
+            uint8 interest3Index;
+            if (interestsSize >= 2) {
+                interest2Index = uint8(uint256(keccak256(abi.encodePacked(interestRNG + 1))) % interestTypesCount);
+                value = 3;
+            }
+            if (interestsSize >= 3) {
+                interest3Index = uint8(uint256(keccak256(abi.encodePacked(interestRNG + 2))) % interestTypesCount);
+                value = 1;
+            }
+
+            interestRNGsDNAsMap[requester].push(interestDNA(blueprintIndex, interestsSize, interest1Index, value, interest2Index, value, interest3Index, value));
+        }
+
+        delete drawRequestMap[requestId];
     }
 }
