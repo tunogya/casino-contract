@@ -58,7 +58,7 @@ contract FourDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeab
 
     function setSponsorFee(uint256 _value) onlyOwner external {
         sponsorFee = _value;
-        emit SetPlatformFee(_value);
+        emit SetSponsorFee(_value);
     }
 
     // @notice Only stake once per player
