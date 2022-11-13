@@ -51,4 +51,8 @@ interface IPrintingPod {
     function draftInterestDNAsOf(address _owner) external view returns (interestDNA[] memory);
 
     function printInterestDNAOf(uint256 _tokenId) external view returns (interestDNA memory);
+
+    function blueprintsCounter() external view returns (uint256);
+
+    function interestTypesCounter() external view returns (uint256);
 }

@@ -241,6 +241,14 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
         return printInterestDNAMap[_tokenId];
     }
 
+    function blueprintsCounter() external view returns (uint256) {
+        return _blueprintsCounter.current();
+    }
+
+    function interestTypesCounter() external view returns (uint256) {
+        return _interestTypesCounter.current();
+    }
+
     function _min(uint256 a, uint256 b) internal pure returns (uint256) {
         return a < b ? a : b;
     }
