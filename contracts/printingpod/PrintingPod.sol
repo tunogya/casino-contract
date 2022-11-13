@@ -26,7 +26,7 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
     bytes32 public endpointIdUint256Array;
     address public sponsorWallet;
 
-    uint8 constant MAX_INTEREST = 20;
+    uint8 constant MAX_INTEREST_POINTS = 20;
 
     CountersUpgradeable.Counter private _tokenIdCounter;
     CountersUpgradeable.Counter private _blueprintsCounter;
@@ -110,8 +110,8 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
     }
 
     // @notice Get max interest
-    function getMaxInterest() external pure returns (uint8) {
-        return MAX_INTEREST;
+    function getMaxInterestPoints() external pure returns (uint8) {
+        return MAX_INTEREST_POINTS;
     }
 
     function addInterestType(string calldata _type) payable external {

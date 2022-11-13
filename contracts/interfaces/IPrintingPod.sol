@@ -27,8 +27,8 @@ interface IPrintingPod {
     // @notice Upgrade interest by native currency
     function upgradeInterest(uint256 _tokenId) external payable;
 
-    // @notice Get max interest
-    function getMaxInterest() external returns (uint8);
+    // @notice Get max interest points
+    function getMaxInterestPoints() external returns (uint8);
 
     function getInterestTypes(uint256 offset, uint256 limit) external view returns (string[] memory);
 
@@ -47,4 +47,8 @@ interface IPrintingPod {
     function withdraw(address _token, uint256 _amount) external;
 
     function safeMint(address to, uint256[] calldata indexes) external;
+
+    function draftInterestDNAsOf(address _owner) external view returns (interestDNA[] memory);
+
+    function printInterestDNAOf(uint256 _tokenId) external view returns (interestDNA memory);
 }
