@@ -12,7 +12,7 @@ import "../interfaces/IPrintingPod.sol";
 import "../lib/RrpRequesterV0Upgradeable.sol";
 
 contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradeable, OwnableUpgradeable, UUPSUpgradeable, IPrintingPod, RrpRequesterV0Upgradeable {
-    event AddInterestType(bytes32 indexed _type);
+    event AddInterestType(string indexed _type);
     event RequestedUint256Array(address indexed requester, bytes32 indexed requestId);
     event ReceivedUint256Array(address indexed requester, bytes32 indexed requestId, uint256[] indexed response);
 
@@ -27,10 +27,10 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
     CountersUpgradeable.Counter private _tokenIdCounter;
 
     Blueprint[] public blueprints;
-    bytes32[] public interestTypes;
+    string[] public interestTypes;
 
     // @notice check if a interest has existed
-    mapping(bytes32 => bool) public interestTypeMap;
+    mapping(string => bool) public interestTypeMap;
 
     // @notice interestRNGs only record current valid data when draw
     mapping(address => interestDNA[]) public interestRNGsDNAsMap;
@@ -109,7 +109,7 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
         return MAX_INTEREST;
     }
 
-    function addInterestType(bytes32 _type) payable external {
+    function addInterestType(string calldata _type) payable external {
         require(interestTypeMap[_type] == false, "Interest type already exists");
 
         interestTypeMap[_type] = true;
@@ -118,9 +118,9 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
         emit AddInterestType(_type);
     }
 
-    function batchAddInterestTypes(bytes32[] memory _types) payable external {
+    function batchAddInterestTypes(string[] calldata _types) payable external {
         for (uint256 i = 0; i < _types.length; i++) {
-            bytes32 _type = _types[i];
+            string memory _type = _types[i];
             require(interestTypeMap[_type] == false, "Interest type already exists");
             emit AddInterestType(_type);
 
@@ -133,9 +133,9 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
         interestDNA storage dna = printInterestDNAMap[tokenId];
 
         string memory blueprint = blueprints[dna.blueprintIndex].name;
-        bytes32 interest1Type = interestTypes[dna.interest1Index];
-        bytes32 interest2Type = interestTypes[dna.interest2Index];
-        bytes32 interest3Type = interestTypes[dna.interest3Index];
+        string memory interest1Type = interestTypes[dna.interest1Index];
+        string memory interest2Type = interestTypes[dna.interest2Index];
+        string memory interest3Type = interestTypes[dna.interest3Index];
         uint8 interest1Value = dna.interest1Value;
         uint8 interest2Value = dna.interest2Value;
         uint8 interest3Value = dna.interest3Value;
@@ -151,18 +151,18 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
         return _blueprints;
     }
 
-    function addBlueprint(Blueprint memory _blueprint) external payable {
+    function addBlueprint(Blueprint calldata _blueprint) external payable {
         blueprints.push(_blueprint);
     }
 
-    function batchAddBlueprints(Blueprint[] memory _blueprints) external payable {
+    function batchAddBlueprints(Blueprint[] calldata _blueprints) external payable {
         for (uint256 i = 0; i < _blueprints.length; i++) {
             blueprints.push(_blueprints[i]);
         }
     }
 
-    function getInterestTypes(uint256 offset, uint256 limit) external view returns (bytes32[] memory) {
-        bytes32[] memory _interestTypes = new bytes32[](limit);
+    function getInterestTypes(uint256 offset, uint256 limit) external view returns (string[] memory) {
+        string[] memory _interestTypes = new string[](limit);
         for (uint256 i = 0; i < limit; i++) {
             _interestTypes[i] = interestTypes[offset + i];
         }
