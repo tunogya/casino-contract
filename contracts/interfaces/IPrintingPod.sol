@@ -9,7 +9,8 @@ interface IPrintingPod {
 
     struct Blueprint {
         string name;                     // blueprint name
-
+        string description;              // blueprint description
+        string image;                    // blueprint image uri
     }
 
     struct interestDNA {

@@ -8,6 +8,8 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+import "base64-sol/base64.sol";
 import "../interfaces/IPrintingPod.sol";
 import "../lib/RrpRequesterV0Upgradeable.sol";
 
@@ -17,6 +19,8 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
     event ReceivedUint256Array(address indexed requester, bytes32 indexed requestId, uint256[] indexed response);
 
     using CountersUpgradeable for CountersUpgradeable.Counter;
+
+    using Strings for uint256;
 
     address public airnode;
     bytes32 public endpointIdUint256Array;
@@ -132,15 +136,59 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
         interestDNA storage dna = printInterestDNAMap[tokenId];
 
-        string memory blueprint = blueprints[dna.blueprintIndex].name;
+        Blueprint storage _blueprint = blueprints[dna.blueprintIndex];
+        string memory name = _blueprint.name;
+        string memory description = _blueprint.description;
+        string memory image = _blueprint.image;
+
+        uint8 size = dna.interestsSize;
         string memory interest1Type = interestTypes[dna.interest1Index];
         string memory interest2Type = interestTypes[dna.interest2Index];
         string memory interest3Type = interestTypes[dna.interest3Index];
-        uint8 interest1Value = dna.interest1Value;
-        uint8 interest2Value = dna.interest2Value;
-        uint8 interest3Value = dna.interest3Value;
+        uint256 interest1Value = uint256(dna.interest1Value);
+        uint256 interest2Value = uint256(dna.interest2Value);
+        uint256 interest3Value = uint256(dna.interest3Value);
 
-        return "";
+        return string(
+            abi.encodePacked(
+                abi.encodePacked(
+                    'data:application/json;base64,',
+                    Base64.encode(
+                        bytes(
+                            abi.encodePacked(
+                                '{"name":"',
+                                name,
+                                '","description":"',
+                                description,
+                                '","image":"',
+                                image,
+                                '","attributes":[{"trait_type":"',
+                                interest1Type,
+                                '","value":',
+                                Strings.toString(interest1Value),
+                                size >= 2 ? string(
+                                abi.encodePacked(
+                                    '},{"trait_type":"',
+                                    interest2Type,
+                                    '","value":',
+                                    Strings.toString(interest2Value)
+                                )
+                            ) : "",
+                                size >= 3 ? string(
+                                abi.encodePacked(
+                                    '},{"trait_type":"',
+                                    interest3Type,
+                                    '","value":',
+                                    Strings.toString(interest3Value)
+                                )
+                            ) : "",
+                                '}]}'
+                            )
+                        )
+                    )
+                )
+            )
+        );
     }
 
     function getBlueprints(uint256 offset, uint256 limit) external view returns (Blueprint[] memory) {
