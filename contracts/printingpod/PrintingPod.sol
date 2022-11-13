@@ -17,6 +17,7 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
     event AddInterestType(string indexed _type);
     event RequestedUint256Array(address indexed requester, bytes32 indexed requestId);
     event ReceivedUint256Array(address indexed requester, bytes32 indexed requestId, uint256[] indexed response);
+    event SetSponsorFee(uint256 indexed value);
 
     using CountersUpgradeable for CountersUpgradeable.Counter;
 
@@ -45,6 +46,8 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
 
     // @notice tokenId => interestDNA
     mapping(uint256 => interestDNA) private printInterestDNAMap;
+
+    uint256 public sponsorFee;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -115,7 +118,8 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
     }
 
     function addInterestType(string calldata _type) payable external {
-        require(interestTypeMap[_type] == false, "Interest type already exists");
+        require(interestTypeMap[_type] == false, "PrintingPod: Interest type already exists");
+        require(msg.value >= sponsorFee, "PrintingPod: Sponsor fee is not enough");
 
         interestTypeMap[_type] = true;
 
@@ -128,7 +132,7 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
     function batchAddInterestTypes(string[] calldata _types) payable external {
         for (uint256 i = 0; i < _types.length; i++) {
             string memory _type = _types[i];
-            require(interestTypeMap[_type] == false, "Interest type already exists");
+            require(interestTypeMap[_type] == false, "PrintingPod: Interest type already exists");
             emit AddInterestType(_type);
 
             interestTypeMap[_type] = true;
@@ -225,10 +229,10 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
 
     function withdraw(address _token, uint256 _amount) onlyOwner external {
         if (_token == address(0)) {
-            require(_amount <= address(this).balance, "Not enough balance");
+            require(_amount <= address(this).balance, "PrintingPod: Not enough balance");
             payable(msg.sender).transfer(_amount);
         } else {
-            require(_amount <= ERC20(_token).balanceOf(address(this)), "Not enough balance");
+            require(_amount <= ERC20(_token).balanceOf(address(this)), "PrintingPod: Not enough balance");
             ERC20(_token).transfer(msg.sender, _amount);
         }
     }
@@ -263,7 +267,7 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
     {
         require(
             drawRequestMap[requestId].isWaitingFulfill,
-            "Request ID not known"
+            "PrintingPod: Request ID not known"
         );
         uint256[] memory qrngUint256Array = abi.decode(data, (uint256[]));
         address requester = drawRequestMap[requestId].requester;
@@ -292,5 +296,10 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
         }
 
         delete drawRequestMap[requestId];
+    }
+
+    function setSponsorFee(uint256 _value) onlyOwner external {
+        sponsorFee = _value;
+        emit SetSponsorFee(_value);
     }
 }

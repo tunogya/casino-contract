@@ -55,4 +55,6 @@ interface IPrintingPod {
     function blueprintsCounter() external view returns (uint256);
 
     function interestTypesCounter() external view returns (uint256);
+
+    function setSponsorFee(uint256 _value) external;
 }
