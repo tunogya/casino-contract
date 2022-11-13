@@ -29,21 +29,22 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
     uint8 constant MAX_INTEREST = 20;
 
     CountersUpgradeable.Counter private _tokenIdCounter;
+    CountersUpgradeable.Counter private _blueprintsCounter;
+    CountersUpgradeable.Counter private _interestTypesCounter;
 
-    Blueprint[] public blueprints;
-    string[] public interestTypes;
+    Blueprint[256] private blueprints;
+    string[256] private interestTypes;
 
     // @notice check if a interest has existed
     mapping(string => bool) public interestTypeMap;
 
-    // @notice interestRNGs only record current valid data when draw
-    mapping(address => interestDNA[]) public interestRNGsDNAsMap;
+    mapping(address => interestDNA[]) private draftInterestDNAsMap;
 
     // @notice requestId => DrawRequest
     mapping(bytes32 => DrawRequest) private drawRequestMap;
 
     // @notice tokenId => interestDNA
-    mapping(uint256 => interestDNA) public printInterestDNAMap;
+    mapping(uint256 => interestDNA) private printInterestDNAMap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -88,13 +89,13 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
 
     function safeMint(address to, uint256[] calldata indexes) external {
         for (uint256 i = 0; i < indexes.length; i++) {
-            require(indexes[i] < interestRNGsDNAsMap[msg.sender].length, "invalid index");
+            require(indexes[i] < draftInterestDNAsMap[msg.sender].length, "invalid index");
 
             uint256 tokenId = _tokenIdCounter.current();
-            printInterestDNAMap[tokenId] = interestRNGsDNAsMap[msg.sender][indexes[i]];
+            printInterestDNAMap[tokenId] = draftInterestDNAsMap[msg.sender][indexes[i]];
             _safeMint(to, tokenId);
         }
-        delete interestRNGsDNAsMap[msg.sender];
+        delete draftInterestDNAsMap[msg.sender];
     }
 
     function _authorizeUpgrade(address newImplementation)
@@ -117,7 +118,9 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
         require(interestTypeMap[_type] == false, "Interest type already exists");
 
         interestTypeMap[_type] = true;
-        interestTypes.push(_type);
+
+        interestTypes[_interestTypesCounter.current() % 256] = _type;
+        _interestTypesCounter.increment();
 
         emit AddInterestType(_type);
     }
@@ -129,7 +132,8 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
             emit AddInterestType(_type);
 
             interestTypeMap[_type] = true;
-            interestTypes.push(_type);
+            interestTypes[_interestTypesCounter.current() % 256] = _type;
+            _interestTypesCounter.increment();
         }
     }
 
@@ -200,12 +204,14 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
     }
 
     function addBlueprint(Blueprint calldata _blueprint) onlyOwner external {
-        blueprints.push(_blueprint);
+        blueprints[_blueprintsCounter.current() % 256] = _blueprint;
+        _blueprintsCounter.increment();
     }
 
     function batchAddBlueprints(Blueprint[] calldata _blueprints) onlyOwner external {
         for (uint256 i = 0; i < _blueprints.length; i++) {
-            blueprints.push(_blueprints[i]);
+            blueprints[_blueprintsCounter.current() % 256] = _blueprints[i];
+            _blueprintsCounter.increment();
         }
     }
 
@@ -225,6 +231,14 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
             require(_amount <= ERC20(_token).balanceOf(address(this)), "Not enough balance");
             ERC20(_token).transfer(msg.sender, _amount);
         }
+    }
+
+    function draftInterestDNAsOf(address _owner) external view returns (interestDNA[] memory) {
+        return draftInterestDNAsMap[_owner];
+    }
+
+    function printInterestDNAOf(uint256 _tokenId) external view returns (interestDNA memory) {
+        return printInterestDNAMap[_tokenId];
     }
 
     function _min(uint256 a, uint256 b) internal pure returns (uint256) {
@@ -247,7 +261,7 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
         address requester = drawRequestMap[requestId].requester;
         emit ReceivedUint256Array(requester, requestId, qrngUint256Array);
 
-        delete interestRNGsDNAsMap[requester];
+        delete draftInterestDNAsMap[requester];
         uint256 interestTypesCount = interestTypes.length;
         for (uint256 i = 0; i < qrngUint256Array.length; i++) {
             uint256 interestRNG = qrngUint256Array[i];
@@ -266,7 +280,7 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
                 value = 1;
             }
 
-            interestRNGsDNAsMap[requester].push(interestDNA(blueprintIndex, interestsSize, interest1Index, value, interest2Index, value, interest3Index, value));
+            draftInterestDNAsMap[requester].push(interestDNA(blueprintIndex, interestsSize, interest1Index, value, interest2Index, value, interest3Index, value));
         }
 
         delete drawRequestMap[requestId];
