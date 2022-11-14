@@ -8,7 +8,7 @@ async function main() {
   const PrintingPod = await ethers.getContractFactory("PrintingPod");
   console.log("Upgrade to PrintingPod...");
   const printingpod = await upgrades.upgradeProxy(
-    "0x63d4b961BF4668cE9C41a9dC3d96b3e69a4fb517",
+    "0xB2eC8E843c27946Dd4789609E5a333917E0Ba215",
     PrintingPod
   );
   console.log("PrintingPod proxy deployed to:", printingpod.address);
