@@ -14,13 +14,15 @@ interface IPrintingPod {
     }
 
     struct interestDNA {
-        uint8 blueprintIndex;            // dna
+        string name;                     // blueprint name
+        string description;              // blueprint description
+        string image;                    // blueprint image uri
+        string interest1Type;            // interest 1 type
+        string interest2Type;            // interest 2 index
+        string interest3Type;            // interest 3 index
         uint8 interestsSize;             // interests size
-        uint8 interest1Index;            // interest 1 index
         uint8 interest1Value;            // interest 1 value
-        uint8 interest2Index;            // interest 2 index
         uint8 interest2Value;            // interest 2 value
-        uint8 interest3Index;            // interest 3 index
         uint8 interest3Value;            // interest 3 value
     }
 

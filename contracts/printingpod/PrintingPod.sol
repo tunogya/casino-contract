@@ -144,15 +144,6 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
         interestDNA storage dna = printInterestDNAMap[tokenId];
 
-        Blueprint storage _blueprint = blueprints[dna.blueprintIndex];
-        string memory name = _blueprint.name;
-        string memory description = _blueprint.description;
-        string memory image = _blueprint.image;
-
-        uint8 size = dna.interestsSize;
-        string memory interest1Type = interestTypes[dna.interest1Index];
-        string memory interest2Type = interestTypes[dna.interest2Index];
-        string memory interest3Type = interestTypes[dna.interest3Index];
         uint256 interest1Value = uint256(dna.interest1Value);
         uint256 interest2Value = uint256(dna.interest2Value);
         uint256 interest3Value = uint256(dna.interest3Value);
@@ -165,27 +156,27 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
                         bytes(
                             abi.encodePacked(
                                 '{"name":"',
-                                name,
+                                dna.name,
                                 '","description":"',
-                                description,
+                                dna.description,
                                 '","image":"',
-                                image,
+                                dna.image,
                                 '","attributes":[{"trait_type":"',
-                                interest1Type,
+                                dna.interest1Type,
                                 '","value":',
                                 Strings.toString(interest1Value),
-                                size >= 2 ? string(
+                                dna.interestsSize >= 2 ? string(
                                 abi.encodePacked(
                                     '},{"trait_type":"',
-                                    interest2Type,
+                                    dna.interest2Type,
                                     '","value":',
                                     Strings.toString(interest2Value)
                                 )
                             ) : "",
-                                size >= 3 ? string(
+                                dna.interestsSize >= 3 ? string(
                                 abi.encodePacked(
                                     '},{"trait_type":"',
-                                    interest3Type,
+                                    dna.interest3Type,
                                     '","value":',
                                     Strings.toString(interest3Value)
                                 )
@@ -292,7 +283,18 @@ contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradea
                 value = 1;
             }
 
-            draftInterestDNAsMap[requester].push(interestDNA(blueprintIndex, interestsSize, interest1Index, value, interest2Index, value, interest3Index, value));
+            draftInterestDNAsMap[requester].push(interestDNA(
+                    blueprints[blueprintIndex].name,
+                    blueprints[blueprintIndex].description,
+                    blueprints[blueprintIndex].image,
+                    interestTypes[interest1Index],
+                    interestTypes[interest2Index],
+                    interestTypes[interest3Index],
+                    interestsSize,
+                    value,
+                    value,
+                    value
+                ));
         }
 
         delete drawRequestMap[requestId];
