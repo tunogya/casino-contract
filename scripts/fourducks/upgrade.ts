@@ -6,7 +6,7 @@ async function main() {
   const gas = await ethers.provider.getGasPrice();
   console.log("Gas price:", gas.toString());
   const FourDucks = await ethers.getContractFactory("FourDucks");
-  console.log("Upgrade to FourDucksV2...");
+  console.log("Upgrade to FourDucks...");
   const fourDucks = await upgrades.upgradeProxy(
     "0x97306f1c9679f5DE1c5223F2b2AC8EFBc5BF6caC",
     FourDucks
