@@ -13,9 +13,9 @@ contract Snatch is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeable,
     using Counters for Counters.Counter;
 
     event RequestedUint256(uint256 indexed poolId, bytes32 indexed requestId);
-    event ReceivedUint256(uint256 indexed poolId, bytes32 indexed requestId, uint256 indexed response);
+    event ReceivedUint256(uint256 indexed poolId, bytes32 indexed requestId, uint256 response);
     event RequestedUint256Array(uint256 indexed poolId, bytes32 indexed requestId);
-    event ReceivedUint256Array(uint256 indexed poolId, bytes32 indexed requestId, uint256[] indexed response);
+    event ReceivedUint256Array(uint256 indexed poolId, bytes32 indexed requestId, uint256[] response);
 
     address public airnode;
     bytes32 public endpointIdUint256;

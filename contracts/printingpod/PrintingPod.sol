@@ -16,7 +16,7 @@ import "../lib/RrpRequesterV0Upgradeable.sol";
 contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradeable, OwnableUpgradeable, UUPSUpgradeable, IPrintingPod, RrpRequesterV0Upgradeable {
     event AddInterestType(string indexed _type);
     event RequestedUint256Array(address indexed requester, bytes32 indexed requestId);
-    event ReceivedUint256Array(address indexed requester, bytes32 indexed requestId, uint256[] indexed response);
+    event ReceivedUint256Array(address indexed requester, bytes32 indexed requestId, uint256[] response);
     event SetSponsorFee(uint256 indexed value);
 
     using CountersUpgradeable for CountersUpgradeable.Counter;
