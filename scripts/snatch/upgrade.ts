@@ -8,7 +8,7 @@ async function main() {
   const Snatch = await ethers.getContractFactory("Snatch");
   console.log("Upgrade to Snatch...");
   const snatch = await upgrades.upgradeProxy(
-    "0x0bA24032A01120d1bE9C0bB0fdBEd68e8C289E8A",
+    "0x0A048379fcCafe3D407F97bF480d224156fb5661",
     Snatch
   );
   console.log("Snatch proxy deployed to:", snatch.address);
