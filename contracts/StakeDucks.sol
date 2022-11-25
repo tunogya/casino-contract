@@ -7,15 +7,17 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "./interfaces/IStakeDucks.sol";
+import "./interfaces/ICash.sol";
 import "./lib/RrpRequesterV0Upgradeable.sol";
 
-contract FourDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeable, UUPSUpgradeable, IStakeDucks {
+contract StakeDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeable, UUPSUpgradeable, IStakeDucks {
     using Counters for Counters.Counter;
 
     address public airnode;
     bytes32 public endpointIdUint256;
     bytes32 public endpointIdUint256Array;
     address public sponsorWallet;
+    address public cashAddress;
 
     // bytes32 => poolId
     mapping(bytes32 => uint256) private requestId2PoolIdMap;
@@ -53,32 +55,48 @@ contract FourDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeab
     }
 
     // @notice solo stake will auto draw
-    function soloStake(STAKE_DETAIL _stakeDetail) payable external {
-        uint256 poolId = poolIdCounter.current();
-        poolIdCounter.increment();
-
-        if (_token == address(0)) {
-            require(msg.value >= _abs(_amount) + sponsorFee, "FourDucks: eth amount is not enough");
-        } else {
-            require(ERC20(_token).transferFrom(msg.sender, address(this), _abs(_amount)), "FourDucks: transferFrom failed");
-        }
+    function soloStake(STAKE_DETAIL calldata _stakeDetail) payable external returns (bool) {
+//        uint256 poolId = poolIdCounter.current();
+//        poolIdCounter.increment();
+//
+//        if (_token == address(0)) {
+//            require(msg.value >= _abs(_amount) + sponsorFee, "FourDucks: eth amount is not enough");
+//        } else {
+//            require(ERC20(_token).transferFrom(msg.sender, address(this), _abs(_amount)), "FourDucks: transferFrom failed");
+//        }
+        return true;
     }
 
     // @notice create a new pooled stake
-    function startPooledStake() external returns (uint256 poolId);
+    function startPooledStake() external returns (uint256 poolId) {
+        poolId = poolIdCounter.current();
+        poolIdCounter.increment();
+    }
 
     // @notice pooled stake will not auto draw
-    function pooledStake(uint256 _poolId, STAKE_DETAIL _stakeDetail) payable external;
+    function pooledStake(uint256 _poolId, STAKE_DETAIL calldata _stakeDetail) payable external returns (bool) {
+        return true;
+    }
 
     // @notice end the pool, and start draw
     // only players of this pool can end the pool
-    function endPooledStake(uint256 _poolId) external;
+    function endPooledStake(uint256 _poolId) external returns (bool) {
+        return true;
+    }
 
     // @notice get pool snapshot
-    function poolSnapshotOf(uint256 _poolId) external view returns (POOL_SNAPSHOT memory);
+    function poolSnapshotOf(uint256 _poolId) external view returns (POOL_SNAPSHOT memory) {
+        return poolId2PoolSnapshotMap[_poolId];
+    }
 
     // @notice query next pool id
-    function nextPoolId() external returns (uint256 poolId) {
-        return poolIdCounter.current();
+    function nextPoolId() external view returns (uint256 poolId) {
+        poolId = poolIdCounter.current();
     }
+
+    function _authorizeUpgrade(address newImplementation)
+    internal
+    onlyOwner
+    override
+    {}
 }

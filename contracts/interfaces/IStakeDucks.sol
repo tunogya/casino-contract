@@ -31,21 +31,21 @@ interface IStakeDucks {
     }
 
     // @notice solo stake will auto draw
-    function soloStake(STAKE_DETAIL _stakeDetail) payable external;
+    function soloStake(STAKE_DETAIL calldata _stakeDetail) payable external returns (bool);
 
     // @notice create a new pooled stake
     function startPooledStake() external returns (uint256 poolId);
 
     // @notice pooled stake will not auto draw
-    function pooledStake(uint256 _poolId, STAKE_DETAIL _stakeDetail) payable external;
+    function pooledStake(uint256 _poolId, STAKE_DETAIL calldata _stakeDetail) payable external returns (bool);
 
     // @notice end the pool, and start draw
     // only players of this pool can end the pool
-    function endPooledStake(uint256 _poolId) external;
+    function endPooledStake(uint256 _poolId) external returns (bool);
 
     // @notice get pool snapshot
     function poolSnapshotOf(uint256 _poolId) external view returns (POOL_SNAPSHOT memory);
 
     // @notice query next pool id
-    function nextPoolId() external returns (uint256 poolId);
+    function nextPoolId() external view returns (uint256 poolId);
 }
