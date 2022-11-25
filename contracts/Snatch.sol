@@ -6,8 +6,8 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "../interfaces/ISnatch.sol";
-import "../lib/RrpRequesterV0Upgradeable.sol";
+import "./interfaces/ISnatch.sol";
+import "./lib/RrpRequesterV0Upgradeable.sol";
 
 contract Snatch is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeable, UUPSUpgradeable, ISnatch {
     using Counters for Counters.Counter;

@@ -10,8 +10,8 @@ import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "base64-sol/base64.sol";
-import "../interfaces/IPrintingPod.sol";
-import "../lib/RrpRequesterV0Upgradeable.sol";
+import "./interfaces/IPrintingPod.sol";
+import "./lib/RrpRequesterV0Upgradeable.sol";
 
 contract PrintingPod is Initializable, ERC721Upgradeable, ERC721BurnableUpgradeable, OwnableUpgradeable, UUPSUpgradeable, IPrintingPod, RrpRequesterV0Upgradeable {
     event AddInterestType(string indexed _type);

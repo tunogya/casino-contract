@@ -5,8 +5,8 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "../interfaces/IFourDucks.sol";
-import "../lib/RrpRequesterV0Upgradeable.sol";
+import "./interfaces/IFourDucks.sol";
+import "./lib/RrpRequesterV0Upgradeable.sol";
 
 contract FourDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradeable, UUPSUpgradeable, IFourDucks {
     event RequestedUint256(address indexed poolId, bytes32 indexed requestId);
