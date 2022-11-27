@@ -76,9 +76,9 @@ contract Cash is Initializable, AccessControlUpgradeable, UUPSUpgradeable, ICash
             accountCashMap[address(this)][_token] += taxAmount;
         }
         if (_token == address(0)) {
-            payable(address(this)).transfer(_amount);
+            require(payable(address(this)).transfer(_amount), "withdraw ETH failed");
         } else {
-            ERC20(_token).transfer(address(this), _amount);
+            require(ERC20(_token).transfer(address(this), _amount), "withdraw ERC20 failed");
         }
         return true;
     }
@@ -100,9 +100,9 @@ contract Cash is Initializable, AccessControlUpgradeable, UUPSUpgradeable, ICash
             accountCashMap[address(this)][_token] -= _amount;
         }
         if (_token == address(0)) {
-            payable(msg.sender).transfer(_amount);
+            require(payable(address(this)).transfer(_amount), "withdraw ETH failed");
         } else {
-            ERC20(_token).transfer(msg.sender, _amount);
+            require(ERC20(_token).transfer(address(this), _amount), "withdraw ERC20 failed");
         }
         return true;
     }
