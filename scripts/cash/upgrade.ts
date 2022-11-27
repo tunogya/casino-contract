@@ -7,7 +7,10 @@ async function main() {
   console.log("Gas price:", gas.toString());
   const Cash = await ethers.getContractFactory("Cash");
   console.log("Upgrade to Cash...");
-  const cash = await upgrades.upgradeProxy("", Cash);
+  const cash = await upgrades.upgradeProxy(
+    "0x14Ce4f38ea40Bb46d65Ed840bff5717E8FAf9Cb2",
+    Cash
+  );
   console.log("Cash proxy deployed to:", cash.address);
 }
 
