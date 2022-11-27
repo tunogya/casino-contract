@@ -22,4 +22,8 @@ interface ICash {
     function transfer(address _token, address _to, uint256 _amount) external returns (bool);
 
     function transferFrom(address _token, address _from, address _to, uint256 _amount) external returns (bool);
+
+    function mint(address _token, address _to, uint256 _amount) external returns (bool);
+
+    function burn(address _token, address _from, uint256 _amount) external returns (bool);
 }

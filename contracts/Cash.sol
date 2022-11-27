@@ -8,9 +8,6 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./interfaces/ICash.sol";
 
 contract Cash is Initializable, AccessControlUpgradeable, UUPSUpgradeable, ICash {
-    // @notice only contract with this role can call this function
-    bytes32 public constant TRANSFER_FROM_ROLE = keccak256("TRANSFER_FROM_ROLE");
-
     // 10% = 1e17, tax will send to cash-address (this), only admin can set and withdraw tax
     uint256 public tax;
 
@@ -125,19 +122,48 @@ contract Cash is Initializable, AccessControlUpgradeable, UUPSUpgradeable, ICash
         return true;
     }
 
-    // @notice only owner can transfer from other account
+    // @notice only admin can transfer from other account
     function transferFrom(address _token, address _from, address _to, uint256 _amount)
     external
-    onlyRole(TRANSFER_FROM_ROLE)
-    override
+    onlyRole(DEFAULT_ADMIN_ROLE)
     returns (bool)
     {
+        require(_from != address(0), "transfer from the zero address");
+        require(_to != address(0), "transfer to the zero address");
+
         uint256 cash = accountCashMap[_from][_token];
         require(cash >= _amount, "Not enough cash");
         unchecked {
             accountCashMap[_from][_token] -= _amount;
         }
         accountCashMap[_to][_token] += _amount;
+        return true;
+    }
+
+    // @notice direct add cash to account, no transfer
+    function mint(address _token, address _to, uint256 _amount)
+    external
+    onlyRole(DEFAULT_ADMIN_ROLE)
+    returns (bool)
+    {
+        accountCashMap[_to][_token] += _amount;
+        return true;
+    }
+
+    // @notice direct remove cash from account, no transfer
+    function burn(address _token, address _from, uint256 _amount)
+    external
+    onlyRole(DEFAULT_ADMIN_ROLE)
+    returns (bool)
+    {
+        uint256 cash = accountCashMap[_from][_token];
+        // if not enough cash, burn all
+        if (cash < _amount) {
+            _amount = cash;
+        }
+        unchecked {
+            accountCashMap[_from][_token] -= _amount;
+        }
         return true;
     }
 
