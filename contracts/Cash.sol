@@ -14,11 +14,6 @@ contract Cash is Initializable, AccessControlUpgradeable, UUPSUpgradeable, ICash
     // @notice account => token => amount
     mapping(address => mapping(address => uint256)) private accountCashMap;
 
-    // @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
-        _disableInitializers();
-    }
-
     function initialize() initializer public {
         __AccessControl_init();
         __UUPSUpgradeable_init();
