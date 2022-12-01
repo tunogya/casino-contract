@@ -25,9 +25,13 @@ How many of N ducks will swim to the same half of the pool?
 | n   |          |          |          |          |           |           |            | P(n,n-5)=     | P(n,n-4)=     | P(n,n-3)=     | P(n,n-2)=    | P(n,n-1)=(n-3)*n | P(n,n)=n |
 
 P(n, n - 0) = n / 2^(n-1)
+
 P(n, n - 1) = (n - 3) * n / 2^(n-1)
+
 P(n, n - 2) = ...
+
 ...
+
 **P(n, n - k) = ...**
 
 > You can see that the probability use this script, [stakeDucks.js](./test/stakeDucks.js)
