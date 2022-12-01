@@ -39,14 +39,12 @@ const getMaxGroupSize = (array) => {
 };
 
 const result = {};
-for (let i = 0; i < 1000000; i++) {
+for (let i = 0; i < 2 ** (DUCKS - 1) * 1000; i++) {
   const array = new Array(DUCKS)
     .fill(0)
     .map(() => Math.floor(Math.random() * MOD));
   const size = getMaxGroupSize(array);
-  if (size === 2) {
-    console.log(array);
-  }
-  result[size] = result[size] ? result[size] + 1 : 1;
+  result[size] = result[size] ? result[size] + 1 / 1000 : 1 / 1000;
 }
+
 console.log(result);
