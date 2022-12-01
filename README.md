@@ -4,6 +4,8 @@
 
 How many of N ducks will swim to the same half of the pool?
 
+![4ducks](./4ducks.png)
+
 > For the convenience of describing the relationship, the table ignores the following denominator, **/ 2^(n-1)**
 
 |     | 1        | 2        | 3        | 4        | 5         | 6         | n-6        | n-5           | n-4           | n-3           | n-2          | n-1              | n        |
