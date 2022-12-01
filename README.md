@@ -1,46 +1,30 @@
-# Advanced Sample Hardhat Project
+# Casino - WizardingPay
 
-This project demonstrates an advanced Hardhat use case, integrating other tools commonly used alongside Hardhat in the ecosystem.
+## Stake Ducks
 
-The project comes with a sample contract, a test for that contract, a sample script that deploys that contract, and an example of a task implementation, which simply lists the available accounts. It also comes with a variety of other tools, preconfigured to work with the project code.
+How many of N ducks will swim to the same half of the pool?
 
-Try running some of the following tasks:
+> For the convenience of describing the relationship, the table ignores the following denominator, **/ 2^(n-1)**
 
-```shell
-npx hardhat accounts
-npx hardhat compile
-npx hardhat clean
-npx hardhat test
-npx hardhat node
-npx hardhat help
-REPORT_GAS=true npx hardhat test
-npx hardhat coverage
-npx hardhat run scripts/deploy.ts
-TS_NODE_FILES=true npx ts-node scripts/deploy.ts
-npx eslint '**/*.{js,ts}'
-npx eslint '**/*.{js,ts}' --fix
-npx prettier '**/*.{json,sol,md}' --check
-npx prettier '**/*.{json,sol,md}' --write
-npx solhint 'contracts/**/*.sol'
-npx solhint 'contracts/**/*.sol' --fix
-```
+|     | 1        | 2        | 3        | 4        | 5         | 6         | n-6        | n-5           | n-4           | n-3           | n-2          | n-1              | n        |
+|-----|----------|----------|----------|----------|-----------|-----------|------------|---------------|---------------|---------------|--------------|------------------|----------|
+| 0   | P(0,0)=0 |          |          |          |           |           |            |               |               |               |              |                  |          |
+| 1   |          | P(1,1)=1 |          |          |           |           |            |               |               |               |              |                  |          |
+| 2   |          |          | P(2,2)=2 |          |           |           |            |               |               |               |              |                  |          |
+| 3   |          |          | P(3,2)=1 | P(3,3)=3 |           |           |            |               |               |               |              |                  |          |
+| 4   |          |          |          | P(4,3)=4 | P(4,4)=4  |           |            |               |               |               |              |                  |          |
+| 5   |          |          |          | P(5,3)=1 | P(5,4)=10 | P(5,5)=5  |            |               |               |               |              |                  |          |
+| 6   |          |          |          |          | P(6,4)=8  | P(6,5)=18 | P(6,6)=6   |               |               |               |              |                  |          |
+| 7   |          |          |          |          | P(7,4)=1  | P(7,5)=28 | P(7,6)=28  | P(7,n-5)=7    |               |               |              |                  |          |
+| 8   |          |          |          |          |           | P(8,5)=16 | P(8,6)=64  | P(8,n-5)=40   | P(8,n-4)=8    |               |              |                  |          |
+| 9   |          |          |          |          |           | P(9,5)=1  | P(9,6)=75  | P(9,n-5)=117  | P(9,n-4)=54   | P(9,n-3)=9    |              |                  |          |
+| 10  |          |          |          |          |           |           | P(10,6)=32 | P(10,n-5)=210 | P(10,n-4)=190 | P(10,n-3)=70  | P(10,n-2)=10 |                  |          |
+| 11  |          |          |          |          |           |           | P(11,6)=1  | P(11,n-5)=198 | P(11,n-4)=440 | P(11,n-3)=286 | P(11,n-2)=88 | P(11,n-1)=11     |          |
+| n   |          |          |          |          |           |           |            | P(n,n-5)=     | P(n,n-4)=     | P(n,n-3)=     | P(n,n-2)=    | P(n,n-1)=(n-3)*n | P(n,n)=n |
 
-# Etherscan verification
+P(n, n - 0) = n / 2^(n-1)
+P(n, n - 1) = (n - 3) * n / 2^(n-1)
+P(n, n - 2) = ...
+...
+**P(n, n - k) = ...**
 
-To try out Etherscan verification, you first need to deploy a contract to an Ethereum network that's supported by Etherscan, such as Ropsten.
-
-In this project, copy the .env.example file to a file named .env, and then edit it to fill in the details. Enter your Etherscan API key, your Ropsten node URL (eg from Alchemy), and the private key of the account which will send the deployment transaction. With a valid .env file in place, first deploy your contract:
-
-```shell
-hardhat run --network ropsten scripts/deploy.ts
-```
-
-Then, copy the deployment address and paste it in to replace `DEPLOYED_CONTRACT_ADDRESS` in this command:
-
-```shell
-npx hardhat verify --network ropsten DEPLOYED_CONTRACT_ADDRESS "Hello, Hardhat!"
-```
-
-# Performance optimizations
-
-For faster runs of your tests and scripts, consider skipping ts-node's type checking by setting the environment variable `TS_NODE_TRANSPILE_ONLY` to `1` in hardhat's environment. For more details see [the documentation](https://hardhat.org/guides/typescript.html#performance-optimizations).
