@@ -31,10 +31,10 @@ interface IStakeDucks {
     }
 
     // @notice solo stake will auto draw
-    function soloStake(STAKE_DETAIL calldata _stakeDetail) payable external returns (bool);
+    function soloStake(address _token, uint256 _size, STAKE_DETAIL calldata _stakeDetail) payable external returns (bool);
 
     // @notice create a new pooled stake
-    function startPooledStake() external returns (uint256 poolId);
+    function startPooledStake(address _token, uint256 _size) external returns (uint256 poolId);
 
     // @notice pooled stake will not auto draw
     function pooledStake(uint256 _poolId, STAKE_DETAIL calldata _stakeDetail) payable external returns (bool);

@@ -17,7 +17,7 @@ contract StakeDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradea
     bytes32 public endpointIdUint256;
     bytes32 public endpointIdUint256Array;
     address public sponsorWallet;
-    address public cashAddress;
+    ICash public cash = ICash(0x0000000000000000000000000000000000000000);
 
     // bytes32 => poolId
     mapping(bytes32 => uint256) private requestId2PoolIdMap;
@@ -55,20 +55,36 @@ contract StakeDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradea
     }
 
     // @notice solo stake will auto draw
-    function soloStake(STAKE_DETAIL calldata _stakeDetail) payable external returns (bool) {
-//        uint256 poolId = poolIdCounter.current();
-//        poolIdCounter.increment();
-//
-//        if (_token == address(0)) {
-//            require(msg.value >= _abs(_amount) + sponsorFee, "FourDucks: eth amount is not enough");
-//        } else {
-//            require(ERC20(_token).transferFrom(msg.sender, address(this), _abs(_amount)), "FourDucks: transferFrom failed");
-//        }
+    function soloStake(address _token, uint256 _size, STAKE_DETAIL calldata _stakeDetail) payable external returns (bool) {
+        uint256 poolId = poolIdCounter.current();
+        poolIdCounter.increment();
+
+        require(ICash.burn(_token, msg.sender, _stakeDetail.amount), "ICash: burn failed");
+
+        bytes32 requestId = airnodeRrp.makeFullRequest(
+            airnode,
+            endpointIdUint256Array,
+            address(this),
+            sponsorWallet,
+            address(this),
+            this.fulfillUint256Array.selector,
+            abi.encode(bytes32("1u"), bytes32("size"), _size)
+        );
+
+        requestId2PoolIdMap[requestId] = poolId;
+
+        POOL_SNAPSHOT storage poolSnapshot = poolId2PoolSnapshotMap[poolId];
+        poolSnapshot.isWaitingFulfill = true;
+        poolSnapshot.isGameOver = true;
+        poolSnapshot.token = _token;
+        poolSnapshot.size = _size;
+        poolSnapshot.stakeDetails.push(_stakeDetail);
+
         return true;
     }
 
     // @notice create a new pooled stake
-    function startPooledStake() external returns (uint256 poolId) {
+    function startPooledStake(address _token, uint256 _size) external returns (uint256 poolId) {
         poolId = poolIdCounter.current();
         poolIdCounter.increment();
     }
