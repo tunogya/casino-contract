@@ -91,12 +91,36 @@ contract StakeDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradea
 
     // @notice pooled stake will not auto draw
     function pooledStake(uint256 _poolId, STAKE_DETAIL calldata _stakeDetail) payable external returns (bool) {
+        POOL_SNAPSHOT storage poolSnapshot = poolId2PoolSnapshotMap[_poolId];
+        require(!poolSnapshot.isGameOver, "StakeDucks: game over"); // game over
+        require(ICash.burn(_token, msg.sender, _stakeDetail.amount), "ICash: burn failed");
+
+        poolSnapshot.stakeDetails.push(_stakeDetail);
+
         return true;
     }
 
     // @notice end the pool, and start draw
     // only players of this pool can end the pool
     function endPooledStake(uint256 _poolId) external returns (bool) {
+        POOL_SNAPSHOT storage poolSnapshot = poolId2PoolSnapshotMap[_poolId];
+        require(!poolSnapshot.isGameOver, "StakeDucks: game over"); // game over
+        require(poolSnapshot.stakeDetails.length > 0, "StakeDucks: not enough players"); // not enough players
+
+        poolSnapshot.isWaitingFulfill = true;
+        poolSnapshot.isGameOver = true;
+
+        bytes32 requestId = airnodeRrp.makeFullRequest(
+            airnode,
+            endpointIdUint256Array,
+            address(this),
+            sponsorWallet,
+            address(this),
+            this.fulfillUint256Array.selector,
+            abi.encode(bytes32("1u"), bytes32("size"), poolSnapshot.size)
+        );
+        requestId2PoolIdMap[requestId] = _poolId;
+
         return true;
     }
 
