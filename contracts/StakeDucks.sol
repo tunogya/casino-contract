@@ -18,6 +18,18 @@ contract StakeDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradea
     bytes32 public endpointIdUint256Array;
     address public sponsorWallet;
     ICash public cash = ICash(0x0000000000000000000000000000000000000000);
+    uint256[] private P = [
+        1,
+        0,2,
+        0,1,3,
+        0,0,4,4,
+        0,0,1,10,5,
+        0,0,0,8,18,6,
+        0,0,0,1,28,28,7,
+        0,0,0,0,16,64,40,8,
+        0,0,0,0,1,75,117,54,9,
+        0,0,0,0,0,32,210,190,70,10
+    ];
 
     // bytes32 => poolId
     mapping(bytes32 => uint256) private requestId2PoolIdMap;
@@ -139,4 +151,13 @@ contract StakeDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradea
     onlyOwner
     override
     {}
+
+    function pOf(uint256 _size) public view returns (uint256[] memory) {
+        uint256[] memory p = new uint256[](_size);
+        uint256 startIndex = _size * (_size - 1) / 2;
+        for (uint256 i = 0; i < _size; i++) {
+            p[i] = P[startIndex + i];
+        }
+        return p;
+    }
 }
