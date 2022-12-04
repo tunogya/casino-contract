@@ -5,13 +5,13 @@ async function main() {
   console.log("Chain ID:", chainId);
   const gas = await ethers.provider.getGasPrice();
   console.log("Gas price:", gas.toString());
-  const FourDucks = await ethers.getContractFactory("FourDucks");
-  console.log("Upgrade to FourDucks...");
-  const fourDucks = await upgrades.upgradeProxy(
-    "0x97306f1c9679f5DE1c5223F2b2AC8EFBc5BF6caC",
+  const FourDucks = await ethers.getContractFactory("StakeDucks");
+  console.log("Upgrade to StakeDucks...");
+  const stakeDucks = await upgrades.upgradeProxy(
+    "",
     FourDucks
   );
-  console.log("FourDucks proxy deployed to:", fourDucks.address);
+  console.log("FourDucks proxy deployed to:", stakeDucks.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

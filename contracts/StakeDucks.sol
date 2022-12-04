@@ -17,19 +17,8 @@ contract StakeDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradea
     bytes32 public endpointIdUint256;
     bytes32 public endpointIdUint256Array;
     address public sponsorWallet;
-    address public cashAddress = address(0x0000000000000000000000000000000000000000);
-    uint256[] private P = [
-        1,
-        0,2,
-        0,1,3,
-        0,0,4,4,
-        0,0,1,10,5,
-        0,0,0,8,18,6,
-        0,0,0,1,28,28,7,
-        0,0,0,0,16,64,40,8,
-        0,0,0,0,1,75,117,54,9,
-        0,0,0,0,0,32,210,190,70,10
-    ];
+    address public cashAddress;
+    uint256[] private P;
 
     // bytes32 => poolId
     mapping(bytes32 => uint256) private requestId2PoolIdMap;
@@ -38,15 +27,24 @@ contract StakeDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradea
 
     Counters.Counter private poolIdCounter;
 
-    // @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
-        _disableInitializers();
-    }
-
     function initialize(address _airnodeRrp) initializer public {
         __RrpRequesterV0_init(_airnodeRrp);
         __Ownable_init();
         __UUPSUpgradeable_init();
+
+        P = [
+        1,
+        0, 2,
+        0, 1, 3,
+        0, 0, 4, 4,
+        0, 0, 1, 10, 5,
+        0, 0, 0, 8, 18, 6,
+        0, 0, 0, 1, 28, 28, 7,
+        0, 0, 0, 0, 16, 64, 40, 8,
+        0, 0, 0, 0, 1, 75, 117, 54, 9,
+        0, 0, 0, 0, 0, 32, 210, 190, 70, 10
+        ];
+        cashAddress = address(0x14Ce4f38ea40Bb46d65Ed840bff5717E8FAf9Cb2);
     }
 
     /// @notice Sets parameters used in requesting QRNG services
@@ -105,7 +103,8 @@ contract StakeDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradea
     // @notice pooled stake will not auto draw
     function pooledStake(uint256 _poolId, STAKE_DETAIL calldata _stakeDetail) payable external returns (bool) {
         POOL_SNAPSHOT storage poolSnapshot = poolId2PoolSnapshotMap[_poolId];
-        require(!poolSnapshot.isGameOver, "StakeDucks: game over"); // game over
+        require(!poolSnapshot.isGameOver, "StakeDucks: game over");
+        // game over
         require(ICash(cashAddress).burn(poolSnapshot.token, msg.sender, _stakeDetail.amount), "burn failed");
 
         poolSnapshot.stakeDetails.push(_stakeDetail);
@@ -116,8 +115,10 @@ contract StakeDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradea
     // only players of this pool can end the pool
     function endPooledStake(uint256 _poolId) external returns (bool) {
         POOL_SNAPSHOT storage poolSnapshot = poolId2PoolSnapshotMap[_poolId];
-        require(!poolSnapshot.isGameOver, "StakeDucks: game over"); // game over
-        require(poolSnapshot.stakeDetails.length > 0, "StakeDucks: not enough players"); // not enough players
+        require(!poolSnapshot.isGameOver, "StakeDucks: game over");
+        // game over
+        require(poolSnapshot.stakeDetails.length > 0, "StakeDucks: not enough players");
+        // not enough players
 
         poolSnapshot.isWaitingFulfill = true;
         poolSnapshot.isGameOver = true;
@@ -172,7 +173,7 @@ contract StakeDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradea
         uint256 poolId = requestId2PoolIdMap[requestId];
         POOL_SNAPSHOT storage poolSnapshot = poolId2PoolSnapshotMap[poolId];
         require(
-           poolSnapshot.isWaitingFulfill,
+            poolSnapshot.isWaitingFulfill,
             "Request ID not known"
         );
         uint256[] memory randoms = abi.decode(data, (uint256[]));
