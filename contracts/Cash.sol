@@ -152,10 +152,7 @@ contract Cash is Initializable, AccessControlUpgradeable, UUPSUpgradeable, ICash
     returns (bool)
     {
         uint256 cash = accountCashMap[_from][_token];
-        // if not enough cash, burn all
-        if (cash < _amount) {
-            _amount = cash;
-        }
+        require(cash >= _amount, "Not enough cash");
         unchecked {
             accountCashMap[_from][_token] -= _amount;
         }

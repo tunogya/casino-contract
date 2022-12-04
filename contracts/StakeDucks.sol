@@ -17,7 +17,7 @@ contract StakeDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradea
     bytes32 public endpointIdUint256;
     bytes32 public endpointIdUint256Array;
     address public sponsorWallet;
-    ICash public cash = ICash(0x0000000000000000000000000000000000000000);
+    address public cashAddress = address(0x0000000000000000000000000000000000000000);
     uint256[] private P = [
         1,
         0,2,
@@ -70,8 +70,7 @@ contract StakeDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradea
     function soloStake(address _token, uint256 _size, STAKE_DETAIL calldata _stakeDetail) payable external returns (bool) {
         uint256 poolId = poolIdCounter.current();
         poolIdCounter.increment();
-
-        require(ICash.burn(_token, msg.sender, _stakeDetail.amount), "ICash: burn failed");
+        require(ICash(cashAddress).burn(_token, msg.sender, _stakeDetail.amount), "burn failed");
 
         bytes32 requestId = airnodeRrp.makeFullRequest(
             airnode,
@@ -84,14 +83,12 @@ contract StakeDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradea
         );
 
         requestId2PoolIdMap[requestId] = poolId;
-
         POOL_SNAPSHOT storage poolSnapshot = poolId2PoolSnapshotMap[poolId];
         poolSnapshot.isWaitingFulfill = true;
         poolSnapshot.isGameOver = true;
         poolSnapshot.token = _token;
         poolSnapshot.size = _size;
         poolSnapshot.stakeDetails.push(_stakeDetail);
-
         return true;
     }
 
@@ -99,16 +96,19 @@ contract StakeDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradea
     function startPooledStake(address _token, uint256 _size) external returns (uint256 poolId) {
         poolId = poolIdCounter.current();
         poolIdCounter.increment();
+
+        POOL_SNAPSHOT storage poolSnapshot = poolId2PoolSnapshotMap[poolId];
+        poolSnapshot.token = _token;
+        poolSnapshot.size = _size;
     }
 
     // @notice pooled stake will not auto draw
     function pooledStake(uint256 _poolId, STAKE_DETAIL calldata _stakeDetail) payable external returns (bool) {
         POOL_SNAPSHOT storage poolSnapshot = poolId2PoolSnapshotMap[_poolId];
         require(!poolSnapshot.isGameOver, "StakeDucks: game over"); // game over
-        require(ICash.burn(_token, msg.sender, _stakeDetail.amount), "ICash: burn failed");
+        require(ICash(cashAddress).burn(poolSnapshot.token, msg.sender, _stakeDetail.amount), "burn failed");
 
         poolSnapshot.stakeDetails.push(_stakeDetail);
-
         return true;
     }
 
@@ -159,5 +159,77 @@ contract StakeDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradea
             p[i] = P[startIndex + i];
         }
         return p;
+    }
+
+    /// @notice Called by the Airnode through the AirnodeRrp contract to
+    /// fulfill the request
+    /// @param requestId Request ID
+    /// @param data ABI-encoded response
+    function fulfillUint256Array(bytes32 requestId, bytes calldata data)
+    external
+    onlyAirnodeRrp
+    {
+        uint256 poolId = requestId2PoolIdMap[requestId];
+        POOL_SNAPSHOT storage poolSnapshot = poolId2PoolSnapshotMap[poolId];
+        require(
+           poolSnapshot.isWaitingFulfill,
+            "Request ID not known"
+        );
+        uint256[] memory randoms = abi.decode(data, (uint256[]));
+        for (uint256 i = 0; i < poolSnapshot.size; i++) {
+            uint128 angle = uint128(randoms[i] >> 128);
+            uint128 radius = uint128(randoms[i]);
+            poolSnapshot.coordinates.push(COORDINATE(angle, radius));
+        }
+        poolSnapshot.isWaitingFulfill = false;
+
+        uint256 result = _judge(poolSnapshot.coordinates);
+        poolSnapshot.result = result;
+
+        for (uint256 i = 0; i < poolSnapshot.stakeDetails.length; i++) {
+            STAKE_DETAIL memory stakeDetail = poolSnapshot.stakeDetails[i];
+            if (stakeDetail.divine == result) {
+                uint256 p = pOf(poolSnapshot.size)[stakeDetail.divine - 1];
+                ICash(cashAddress).mint(poolSnapshot.token, stakeDetail.account, stakeDetail.amount * (2 ** (poolSnapshot.size - 1)) / p);
+            }
+        }
+    }
+
+    function _calculate(COORDINATE[] memory coordinates) internal pure returns (uint256 result) {
+        uint128 item = coordinates[0].angle;
+        uint128 itemEdge = uint128((item + 2 ** 128 / 2) % 2 ** 128);
+        if (item > itemEdge) {
+            uint128 temp = item;
+            item = itemEdge;
+            itemEdge = temp;
+        }
+        for (uint256 i = 0; i < coordinates.length; i++) {
+            if (coordinates[i].angle >= item && coordinates[i].angle <= itemEdge) {
+                result++;
+            }
+        }
+        if (result < coordinates.length / 2) {
+            result = coordinates.length - result;
+        }
+    }
+
+    function _judge(COORDINATE[] memory coordinates) internal pure returns (uint256 result) {
+        for (uint256 i = 0; i < coordinates.length; i++) {
+            uint256 cal_result = _calculate(coordinates);
+            if (cal_result > result) {
+                result = cal_result;
+            }
+            if (cal_result < coordinates.length) {
+                COORDINATE[] memory newCoordinates = new COORDINATE[](coordinates.length);
+                for (uint256 j = 0; j < coordinates.length; j++) {
+                    newCoordinates[j].angle = coordinates[j].angle + 2 ** 127;
+                    newCoordinates[j].radius = coordinates[j].radius;
+                }
+                uint256 cal_result2 = _calculate(newCoordinates);
+                if (cal_result2 > result) {
+                    result = cal_result2;
+                }
+            }
+        }
     }
 }
