@@ -157,6 +157,7 @@ contract StakeDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradea
     {}
 
     function pOf(uint256 _size) public view returns (uint256[] memory) {
+        require(_size > 0 && _size <= 10, "size must > 0 and <= 10");
         uint256[] memory p = new uint256[](_size);
         uint256 startIndex = _size * (_size - 1) / 2;
         for (uint256 i = 0; i < _size; i++) {
