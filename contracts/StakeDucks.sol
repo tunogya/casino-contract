@@ -66,6 +66,8 @@ contract StakeDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradea
 
     // @notice solo stake will auto draw
     function soloStake(address _token, uint256 _size, STAKE_DETAIL calldata _stakeDetail) payable external returns (bool) {
+        require(_size > 0 && _size <= 10, "size must > 0 and <= 10");
+        require(_stakeDetail.divine > 0 && _stakeDetail.divine <= _size, "divine must > 0 and <= size");
         uint256 poolId = poolIdCounter.current();
         poolIdCounter.increment();
         require(ICash(cashAddress).burn(_token, msg.sender, _stakeDetail.amount), "burn failed");
@@ -92,6 +94,7 @@ contract StakeDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradea
 
     // @notice create a new pooled stake
     function startPooledStake(address _token, uint256 _size) external returns (uint256 poolId) {
+        require(_size > 0 && _size <= 10, "size must > 0 and <= 10");
         poolId = poolIdCounter.current();
         poolIdCounter.increment();
 
@@ -103,8 +106,8 @@ contract StakeDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradea
     // @notice pooled stake will not auto draw
     function pooledStake(uint256 _poolId, STAKE_DETAIL calldata _stakeDetail) payable external returns (bool) {
         POOL_SNAPSHOT storage poolSnapshot = poolId2PoolSnapshotMap[_poolId];
-        require(!poolSnapshot.isGameOver, "StakeDucks: game over");
-        // game over
+        require(_stakeDetail.divine > 0 && _stakeDetail.divine <= poolSnapshot.size, "divine must > 0 and <= size");
+        require(!poolSnapshot.isGameOver, "StakeDucks: game over"); // game over
         require(ICash(cashAddress).burn(poolSnapshot.token, msg.sender, _stakeDetail.amount), "burn failed");
 
         poolSnapshot.stakeDetails.push(_stakeDetail);
@@ -190,6 +193,7 @@ contract StakeDucks is Initializable, RrpRequesterV0Upgradeable, OwnableUpgradea
         for (uint256 i = 0; i < poolSnapshot.stakeDetails.length; i++) {
             STAKE_DETAIL memory stakeDetail = poolSnapshot.stakeDetails[i];
             if (stakeDetail.divine == result) {
+                // in this instance, p > 0, don't need to check
                 uint256 p = pOf(poolSnapshot.size)[stakeDetail.divine - 1];
                 ICash(cashAddress).mint(poolSnapshot.token, stakeDetail.account, stakeDetail.amount * (2 ** (poolSnapshot.size - 1)) / p);
             }
