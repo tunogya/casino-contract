@@ -6,16 +6,28 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Baccarat is IBaccarat, Ownable {
-    Card[] private Shoe;
-    uint256 private ShoeCursor;
+    Card[] public Shoe;
+    uint256 public ShoeCursor;
 
-    BettingView[] private BettingViews;
+    BettingView[] public BettingViews;
 
     // player address => token address => amount
-    mapping(address => mapping(address => uint256)) Credit;
+    mapping(address => mapping(address => uint256)) public Credit;
 
     Card[] private playerHands;
     Card[] private bankerHands;
+
+    constructor() {
+        // push 8 decks of cards into shoe
+        for (uint256 i = 0; i < 8; i++) {
+            for (uint256 j = 0; j < 52; j++) {
+                Card memory card;
+                card.suit = uint8(j / 13) + 1;
+                card.rank = uint8(j % 13) + 1;
+                Shoe.push(card);
+            }
+        }
+    }
 
     // @notice Use Knuth shuffle algorithm to shuffle the cards
     // @param _seed random seed, from business data and block data
@@ -64,7 +76,7 @@ contract Baccarat is IBaccarat, Ownable {
         }
     }
 
-    function _safeTransfer(address _token, address _to, uint256 _amount) internal {
+    function safeTransfer(address _token, address _to, uint256 _amount) internal {
         if (_token == address(0)) {
             if (address(this).balance >= _amount) {
                 payable(_to).transfer(_amount);
@@ -191,15 +203,15 @@ contract Baccarat is IBaccarat, Ownable {
             for (uint256 i = 0; i < BettingViews.length; i++) {
                 // banker win, 1 : 0.95
                 if (BettingViews[i].betType == uint256(BetType.Banker) ) {
-                    _safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 195 / 100);
-                    _safeTransfer(BettingViews[i].token, owner(), BettingViews[i].amount * 5 / 100);
+                    safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 195 / 100);
+                    safeTransfer(BettingViews[i].token, owner(), BettingViews[i].amount * 5 / 100);
                 }
                 // banker win and super six, 1 : 20
                 if (BettingViews[i].betType == uint256(BetType.BankerSuperSix) && bankerHandsValue == 6) {
                     if (bankerHands.length == 3) {
-                        _safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 21);
+                        safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 21);
                     } else {
-                        _safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 13);
+                        safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 13);
                     }
                 }
             }
@@ -207,14 +219,14 @@ contract Baccarat is IBaccarat, Ownable {
             // player win, 1 : 1
             for (uint256 i = 0; i < BettingViews.length; i++) {
                 if (BettingViews[i].betType == uint256(BetType.Player)) {
-                    _safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 2);
+                    safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 2);
                 }
                 // player win and super six, 1 : 20
                 if (BettingViews[i].betType == uint256(BetType.PlayerSuperSix) && playerHandsValue == 6) {
                     if (playerHands.length == 3) {
-                        _safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 21);
+                        safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 21);
                     } else {
-                        _safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 13);
+                        safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 13);
                     }
                 }
             }
@@ -222,7 +234,7 @@ contract Baccarat is IBaccarat, Ownable {
             // tie, 1 : 8
             for (uint256 i = 0; i < BettingViews.length; i++) {
                 if (BettingViews[i].betType == uint256(BetType.Tie)) {
-                    _safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 9);
+                    safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 9);
                 }
             }
         }
@@ -232,7 +244,7 @@ contract Baccarat is IBaccarat, Ownable {
             // player pair, 1 : 11
             for (uint256 i = 0; i < BettingViews.length; i++) {
                 if (BettingViews[i].betType == uint256(BetType.BankerPair)) {
-                    _safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 12);
+                    safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 12);
                 }
             }
         }
@@ -241,7 +253,7 @@ contract Baccarat is IBaccarat, Ownable {
             // player pair, 1 : 11
             for (uint256 i = 0; i < BettingViews.length; i++) {
                 if (BettingViews[i].betType == uint256(BetType.PlayerPair)) {
-                    _safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 12);
+                    safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 12);
                 }
             }
         }
@@ -250,6 +262,6 @@ contract Baccarat is IBaccarat, Ownable {
     function withdraw(address _token, uint256 _amount) external {
         require(Credit[msg.sender][_token] >= _amount, "not enough credit");
         Credit[msg.sender][_token] -= _amount;
-        _safeTransfer(_token, msg.sender, _amount);
+        safeTransfer(_token, msg.sender, _amount);
     }
 }
