@@ -1,9 +1,9 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
-import "./interfaces/IBaccarat.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./interfaces/IBaccarat.sol";
 
 contract Baccarat is IBaccarat, Ownable {
     Card[] private _shoe;
@@ -162,7 +162,7 @@ contract Baccarat is IBaccarat, Ownable {
                     _safeTransfer(_layout[i].token, owner(), _layout[i].amount * 5 / 100);
                 }
                 // banker win and super six, 1 : 20
-                if (_layout[i].betType == uint256(BetType.BankerSuperSix) && bankerHandsValue == 6) {
+                if (_layout[i].betType == uint256(BetType.SuperSix) && bankerHandsValue == 6) {
                     if (_bankerHands.length == 3) {
                         _safeTransfer(_layout[i].token, _layout[i].player, _layout[i].amount * 21);
                     } else {
@@ -176,14 +176,6 @@ contract Baccarat is IBaccarat, Ownable {
                 if (_layout[i].betType == uint256(BetType.Player)) {
                     _safeTransfer(_layout[i].token, _layout[i].player, _layout[i].amount * 2);
                 }
-                // player win and super six, 1 : 20
-                if (_layout[i].betType == uint256(BetType.PlayerSuperSix) && playerHandsValue == 6) {
-                    if (_playerHands.length == 3) {
-                        _safeTransfer(_layout[i].token, _layout[i].player, _layout[i].amount * 21);
-                    } else {
-                        _safeTransfer(_layout[i].token, _layout[i].player, _layout[i].amount * 13);
-                    }
-                }
             }
         } else {
             // tie, 1 : 8
@@ -196,7 +188,7 @@ contract Baccarat is IBaccarat, Ownable {
 
         // check pair
         if (_hasPair(_bankerHands)) {
-            // player pair, 1 : 11
+            // banker pair, 1 : 11
             for (uint256 i = 0; i < _layout.length; i++) {
                 if (_layout[i].betType == uint256(BetType.BankerPair)) {
                     _safeTransfer(_layout[i].token, _layout[i].player, _layout[i].amount * 12);

@@ -8,8 +8,7 @@ interface IBaccarat{
         Tie,
         BankerPair,
         PlayerPair,
-        BankerSuperSix,
-        PlayerSuperSix
+        SuperSix
     }
 
     struct Card {
