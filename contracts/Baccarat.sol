@@ -159,7 +159,6 @@ contract Baccarat is IBaccarat, Ownable {
                 // banker win, 1 : 0.95
                 if (_layout[i].betType == uint256(BetType.Banker)) {
                     _safeTransfer(_layout[i].token, _layout[i].player, _layout[i].amount * 195 / 100);
-                    _safeTransfer(_layout[i].token, owner(), _layout[i].amount * 5 / 100);
                 }
                 // banker win and super six, 1 : 20
                 if (_layout[i].betType == uint256(BetType.SuperSix) && bankerHandsValue == 6) {
@@ -212,6 +211,10 @@ contract Baccarat is IBaccarat, Ownable {
     function withdraw(address _token, uint256 _amount) external {
         require(_cheques[msg.sender][_token] >= _amount, "not enough credit");
         _cheques[msg.sender][_token] -= _amount;
+        _safeTransfer(_token, msg.sender, _amount);
+    }
+
+    function withdrawOnlyOwner(address _token, uint256 _amount) external onlyOwner {
         _safeTransfer(_token, msg.sender, _amount);
     }
 
