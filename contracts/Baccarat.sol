@@ -67,7 +67,7 @@ contract Baccarat is IBaccarat, Ownable {
     }
 
     function settle(uint256 nonce) external {
-        require(_canSettle(), "Baccarat: need both bet banker and player");
+        require(_checkAction(), "Baccarat: need both bet banker and player");
 
         // delete playerHands and bankerHands
         delete playerHands;
@@ -253,7 +253,7 @@ contract Baccarat is IBaccarat, Ownable {
         return false;
     }
 
-    function _canSettle() internal view returns (bool) {
+    function _checkAction() internal view returns (bool) {
         // need both have banker and player betting
         bool banker = false;
         bool player = false;
@@ -294,5 +294,14 @@ contract Baccarat is IBaccarat, Ownable {
             Shoe[i] = Shoe[j];
             Shoe[j] = temp;
         }
+    }
+
+    function readCards(uint256 cursor, uint256 count) external view returns (Card[] memory) {
+        require((cursor + count) <= Shoe.length, "not enough cards");
+        Card[] memory cards = new Card[](count);
+        for (uint256 i = 0; i < count; i++) {
+            cards[i] = Shoe[cursor + i];
+        }
+        return cards;
     }
 }
