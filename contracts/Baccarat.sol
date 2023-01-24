@@ -68,7 +68,7 @@ contract Baccarat is IBaccarat, Ownable {
         }
     }
 
-    function getPoint(uint256 _rank) public pure returns (uint256) {
+    function _getPoint(uint256 _rank) internal pure returns (uint256) {
         if (_rank >= 10) {
             return 0;
         } else {
@@ -76,7 +76,7 @@ contract Baccarat is IBaccarat, Ownable {
         }
     }
 
-    function safeTransfer(address _token, address _to, uint256 _amount) internal {
+    function _safeTransfer(address _token, address _to, uint256 _amount) internal {
         if (_token == address(0)) {
             if (address(this).balance >= _amount) {
                 payable(_to).transfer(_amount);
@@ -92,7 +92,7 @@ contract Baccarat is IBaccarat, Ownable {
         }
     }
 
-    function hasPair(Card[] memory _cards) public pure returns (bool) {
+    function _hasPair(Card[] memory _cards) internal pure returns (bool) {
         for (uint256 i = 0; i < _cards.length; i++) {
             for (uint256 j = i + 1; j < _cards.length; j++) {
                 if (_cards[i].rank == _cards[j].rank) {
@@ -103,7 +103,7 @@ contract Baccarat is IBaccarat, Ownable {
         return false;
     }
 
-    function canSettle() public view returns (bool) {
+    function _canSettle() internal view returns (bool) {
         // need both have banker and player betting
         bool banker = false;
         bool player = false;
@@ -118,15 +118,19 @@ contract Baccarat is IBaccarat, Ownable {
         return banker && player;
     }
 
-    function settle() external {
-        require(canSettle(), "Baccarat: need both bet banker and player");
+    function settle(uint256 nonce) external {
+        require(_canSettle(), "Baccarat: need both bet banker and player");
 
         // delete playerHands and bankerHands
         delete playerHands;
         delete bankerHands;
 
-        // TODO need generate a seed
-        uint256 seed = 0;
+        uint256 seed = uint256(keccak256(abi.encodePacked(
+                block.timestamp,
+                block.difficulty,
+                ShoeCursor,
+                nonce
+            )));
         if (Shoe.length - ShoeCursor < 6) {
             // shuffle
             ShoeCursor = 0;
@@ -144,15 +148,15 @@ contract Baccarat is IBaccarat, Ownable {
         ShoeCursor += 4;
 
         // calculate hands value
-        uint256 playerHandsValue = getPoint(getPoint(playerHands[0].rank) + getPoint(playerHands[1].rank));
-        uint256 bankerHandsValue = getPoint(getPoint(bankerHands[0].rank) + getPoint(bankerHands[1].rank));
+        uint256 playerHandsValue = _getPoint(_getPoint(playerHands[0].rank) + _getPoint(playerHands[1].rank));
+        uint256 bankerHandsValue = _getPoint(_getPoint(bankerHands[0].rank) + _getPoint(bankerHands[1].rank));
 
         // if not Natural
         if (playerHandsValue < 8 && bankerHandsValue < 8) {
             // if player hands value is less than 6, draw a third card
             if (playerHandsValue < 6) {
                 playerHands.push(Shoe[ShoeCursor]);
-                playerHandsValue = getPoint(playerHandsValue + getPoint(playerHands[2].rank));
+                playerHandsValue = _getPoint(playerHandsValue + _getPoint(playerHands[2].rank));
                 ShoeCursor += 1;
             }
 
@@ -160,7 +164,7 @@ contract Baccarat is IBaccarat, Ownable {
             if (playerHands.length == 2 && bankerHandsValue < 6) {
                 // draw
                 bankerHands.push(Shoe[ShoeCursor]);
-                bankerHandsValue = getPoint(bankerHandsValue + getPoint(bankerHands[2].rank));
+                bankerHandsValue = _getPoint(bankerHandsValue + _getPoint(bankerHands[2].rank));
                 ShoeCursor += 1;
             }
 
@@ -168,31 +172,31 @@ contract Baccarat is IBaccarat, Ownable {
                 if (bankerHandsValue <= 2) {
                     // draw
                     bankerHands.push(Shoe[ShoeCursor]);
-                    bankerHandsValue = getPoint(bankerHandsValue + getPoint(bankerHands[2].rank));
+                    bankerHandsValue = _getPoint(bankerHandsValue + _getPoint(bankerHands[2].rank));
                     ShoeCursor += 1;
                 }
-                if (bankerHandsValue == 3 && getPoint(playerHands[2].rank) != 8) {
+                if (bankerHandsValue == 3 && _getPoint(playerHands[2].rank) != 8) {
                     // draw
                     bankerHands.push(Shoe[ShoeCursor]);
-                    bankerHandsValue = getPoint(bankerHandsValue + getPoint(bankerHands[2].rank));
+                    bankerHandsValue = _getPoint(bankerHandsValue + _getPoint(bankerHands[2].rank));
                     ShoeCursor += 1;
                 }
-                if (bankerHandsValue == 4 && getPoint(playerHands[2].rank) >= 2 && getPoint(playerHands[2].rank) <= 7) {
+                if (bankerHandsValue == 4 && _getPoint(playerHands[2].rank) >= 2 && _getPoint(playerHands[2].rank) <= 7) {
                     // draw
                     bankerHands.push(Shoe[ShoeCursor]);
-                    bankerHandsValue = getPoint(bankerHandsValue + getPoint(bankerHands[2].rank));
+                    bankerHandsValue = _getPoint(bankerHandsValue + _getPoint(bankerHands[2].rank));
                     ShoeCursor += 1;
                 }
-                if (bankerHandsValue == 5 && getPoint(playerHands[2].rank) >= 4 && getPoint(playerHands[2].rank) <= 7) {
+                if (bankerHandsValue == 5 && _getPoint(playerHands[2].rank) >= 4 && _getPoint(playerHands[2].rank) <= 7) {
                     // draw
                     bankerHands.push(Shoe[ShoeCursor]);
-                    bankerHandsValue = getPoint(bankerHandsValue + getPoint(bankerHands[2].rank));
+                    bankerHandsValue = _getPoint(bankerHandsValue + _getPoint(bankerHands[2].rank));
                     ShoeCursor += 1;
                 }
-                if (bankerHandsValue == 6 && getPoint(playerHands[2].rank) >= 6 && getPoint(playerHands[2].rank) <= 7) {
+                if (bankerHandsValue == 6 && _getPoint(playerHands[2].rank) >= 6 && _getPoint(playerHands[2].rank) <= 7) {
                     // draw
                     bankerHands.push(Shoe[ShoeCursor]);
-                    bankerHandsValue = getPoint(bankerHandsValue + getPoint(bankerHands[2].rank));
+                    bankerHandsValue = _getPoint(bankerHandsValue + _getPoint(bankerHands[2].rank));
                     ShoeCursor += 1;
                 }
             }
@@ -202,16 +206,16 @@ contract Baccarat is IBaccarat, Ownable {
         if (playerHandsValue < bankerHandsValue) {
             for (uint256 i = 0; i < BettingViews.length; i++) {
                 // banker win, 1 : 0.95
-                if (BettingViews[i].betType == uint256(BetType.Banker) ) {
-                    safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 195 / 100);
-                    safeTransfer(BettingViews[i].token, owner(), BettingViews[i].amount * 5 / 100);
+                if (BettingViews[i].betType == uint256(BetType.Banker)) {
+                    _safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 195 / 100);
+                    _safeTransfer(BettingViews[i].token, owner(), BettingViews[i].amount * 5 / 100);
                 }
                 // banker win and super six, 1 : 20
                 if (BettingViews[i].betType == uint256(BetType.BankerSuperSix) && bankerHandsValue == 6) {
                     if (bankerHands.length == 3) {
-                        safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 21);
+                        _safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 21);
                     } else {
-                        safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 13);
+                        _safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 13);
                     }
                 }
             }
@@ -219,14 +223,14 @@ contract Baccarat is IBaccarat, Ownable {
             // player win, 1 : 1
             for (uint256 i = 0; i < BettingViews.length; i++) {
                 if (BettingViews[i].betType == uint256(BetType.Player)) {
-                    safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 2);
+                    _safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 2);
                 }
                 // player win and super six, 1 : 20
                 if (BettingViews[i].betType == uint256(BetType.PlayerSuperSix) && playerHandsValue == 6) {
                     if (playerHands.length == 3) {
-                        safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 21);
+                        _safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 21);
                     } else {
-                        safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 13);
+                        _safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 13);
                     }
                 }
             }
@@ -234,26 +238,26 @@ contract Baccarat is IBaccarat, Ownable {
             // tie, 1 : 8
             for (uint256 i = 0; i < BettingViews.length; i++) {
                 if (BettingViews[i].betType == uint256(BetType.Tie)) {
-                    safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 9);
+                    _safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 9);
                 }
             }
         }
 
         // check pair
-        if (hasPair(bankerHands)) {
+        if (_hasPair(bankerHands)) {
             // player pair, 1 : 11
             for (uint256 i = 0; i < BettingViews.length; i++) {
                 if (BettingViews[i].betType == uint256(BetType.BankerPair)) {
-                    safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 12);
+                    _safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 12);
                 }
             }
         }
 
-        if (hasPair(playerHands)) {
+        if (_hasPair(playerHands)) {
             // player pair, 1 : 11
             for (uint256 i = 0; i < BettingViews.length; i++) {
                 if (BettingViews[i].betType == uint256(BetType.PlayerPair)) {
-                    safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 12);
+                    _safeTransfer(BettingViews[i].token, BettingViews[i].player, BettingViews[i].amount * 12);
                 }
             }
         }
@@ -262,6 +266,6 @@ contract Baccarat is IBaccarat, Ownable {
     function withdraw(address _token, uint256 _amount) external {
         require(Credit[msg.sender][_token] >= _amount, "not enough credit");
         Credit[msg.sender][_token] -= _amount;
-        safeTransfer(_token, msg.sender, _amount);
+        _safeTransfer(_token, msg.sender, _amount);
     }
 }

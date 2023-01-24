@@ -35,5 +35,5 @@ interface IBaccarat{
     function betting(address _token, uint256 _amount, uint256 _betType) payable external;
 
     // @notice play the game and settle the bet
-    function settle() external;
+    function settle(uint256 nonce) external;
 }
