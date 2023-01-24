@@ -213,8 +213,8 @@ contract Baccarat is IBaccarat, Ownable {
     }
 
     function withdraw(address _token, uint256 _amount) external {
-        require(Bankroll[msg.sender][_token] >= _amount, "not enough credit");
-        Bankroll[msg.sender][_token] -= _amount;
+        require(Cheques[msg.sender][_token] >= _amount, "not enough credit");
+        Cheques[msg.sender][_token] -= _amount;
         _safeTransfer(_token, msg.sender, _amount);
     }
 
@@ -231,13 +231,13 @@ contract Baccarat is IBaccarat, Ownable {
             if (address(this).balance >= _amount) {
                 payable(_to).transfer(_amount);
             } else {
-                Bankroll[_to][_token] += _amount;
+                Cheques[_to][_token] += _amount;
             }
         } else {
             if (IERC20(_token).balanceOf(address(this)) >= _amount) {
                 IERC20(_token).transfer(_to, _amount);
             } else {
-                Bankroll[_to][_token] += _amount;
+                Cheques[_to][_token] += _amount;
             }
         }
     }
@@ -270,7 +270,7 @@ contract Baccarat is IBaccarat, Ownable {
 
     // burn some cards after init shuffle
     function _burning() internal {
-        uint256 point = _getPoint(Shoe[Cursor]);
+        uint256 point = _getPoint(Shoe[Cursor].rank);
         if (point <= 7) {
             Cursor += 3;
         } else {
@@ -280,6 +280,10 @@ contract Baccarat is IBaccarat, Ownable {
 
     // @notice Use Knuth shuffle algorithm to shuffle the cards
     // @param _seed random seed, from business data and block data
+    function shuffle(uint256 _seed) external {
+        _shuffle(_seed);
+    }
+
     function _shuffle(uint256 _seed) internal {
         uint256 n = Shoe.length;
         for (uint256 i = Cursor; i < n; i++) {

@@ -25,7 +25,7 @@ interface IBaccarat{
     }
 
     // Returns the shuffled deck of cards
-    function _shuffle(uint256 _seed) internal;
+    function shuffle(uint256 _seed) external;
 
     // @notice player action
     // @param _token betting token address
