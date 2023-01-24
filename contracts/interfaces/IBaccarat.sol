@@ -17,7 +17,7 @@ interface IBaccarat{
         uint8 suit; // 1-4, 1 = spades, 2 = hearts, 3 = diamonds, 4 = clubs
     }
 
-    struct BettingView {
+    struct LayoutAction {
         address player;
         address token;
         uint256 amount;
@@ -25,14 +25,13 @@ interface IBaccarat{
     }
 
     // Returns the shuffled deck of cards
-    function shuffle(uint256 _seed) external;
+    function _shuffle(uint256 _seed) internal;
 
-    // @notice player betting
-    // can be appended,
+    // @notice player action
     // @param _token betting token address
     // @param _amount betting amount
     // @param _betType betting type, 0 = banker, 1 = player, 2 = tie, 3 = banker pair, 4 = player pair
-    function betting(address _token, uint256 _amount, uint256 _betType) payable external;
+    function action(address _token, uint256 _amount, uint256 _betType) payable external;
 
     // @notice play the game and settle the bet
     function settle(uint256 nonce) external;
