@@ -66,6 +66,8 @@ contract Baccarat is IBaccarat, Ownable {
         }
     }
 
+    // @notice play the game and settle the bet
+    // @param nonce random number, anyone can call this function
     function settle(uint256 nonce) external {
         require(_checkAction(), "Baccarat: need both bet banker and player");
 
@@ -212,12 +214,17 @@ contract Baccarat is IBaccarat, Ownable {
         }
     }
 
+    // @notice withdraw the token from contract
+    // @param _token the token address
+    // @param _amount the amount of token
     function withdraw(address _token, uint256 _amount) external {
         require(_cheques[msg.sender][_token] >= _amount, "not enough credit");
         _cheques[msg.sender][_token] -= _amount;
         _safeTransfer(_token, msg.sender, _amount);
     }
 
+    // @notice get the point of the card
+    // @param _rank the rank of the card
     function _getPoint(uint256 _rank) internal pure returns (uint256) {
         if (_rank >= 10) {
             return 0;
@@ -226,6 +233,7 @@ contract Baccarat is IBaccarat, Ownable {
         }
     }
 
+    // @dev transfer the token, or record the cheque
     function _safeTransfer(address _token, address _to, uint256 _amount) internal {
         if (_token == address(0)) {
             if (address(this).balance >= _amount) {
@@ -242,6 +250,8 @@ contract Baccarat is IBaccarat, Ownable {
         }
     }
 
+    // @dev check if the card is pair
+    // @param _cards the cards
     function _hasPair(Card[] memory _cards) internal pure returns (bool) {
         for (uint256 i = 0; i < _cards.length; i++) {
             for (uint256 j = i + 1; j < _cards.length; j++) {
@@ -253,6 +263,7 @@ contract Baccarat is IBaccarat, Ownable {
         return false;
     }
 
+    // @dev check whether can be settle, only can be settle when have banker and player
     function _checkAction() internal view returns (bool) {
         // need both have banker and player betting
         bool banker = false;
@@ -296,6 +307,9 @@ contract Baccarat is IBaccarat, Ownable {
         }
     }
 
+    // @notice get the card from the shoe
+    // @param cursor start begin
+    // @param count the number of card
     function readCards(uint256 cursor, uint256 count) external view returns (Card[] memory) {
         require((cursor + count) <= _shoe.length, "not enough cards");
         Card[] memory cards = new Card[](count);
@@ -305,14 +319,17 @@ contract Baccarat is IBaccarat, Ownable {
         return cards;
     }
 
+    // @notice get the actions at the current layout
     function readLayout() external view returns (LayoutAction[] memory) {
         return _layout;
     }
 
+    // @notice get current cursor
     function readCursor() external view returns (uint256) {
         return _cursor;
     }
 
+    // @notice get cheque balance of the user
     function chequesOf(address _player, address _token) external view returns (uint256) {
         return _cheques[_player][_token];
     }
