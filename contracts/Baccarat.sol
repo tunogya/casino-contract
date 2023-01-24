@@ -185,9 +185,8 @@ contract Baccarat is IBaccarat, Ownable {
             }
         }
 
-        // check pair
-        if (_hasPair(_bankerHands)) {
-            // banker pair, 1 : 11
+        // banker pair, 1 : 11
+        if (_bankerHands[0].rank == _bankerHands[1].rank) {
             for (uint256 i = 0; i < _layout.length; i++) {
                 if (_layout[i].betType == uint256(BetType.BankerPair)) {
                     _safeTransfer(_layout[i].token, _layout[i].player, _layout[i].amount * 12);
@@ -195,8 +194,8 @@ contract Baccarat is IBaccarat, Ownable {
             }
         }
 
-        if (_hasPair(_playerHands)) {
-            // player pair, 1 : 11
+        // player pair, 1 : 11
+        if (_playerHands[0].rank == _playerHands[1].rank) {
             for (uint256 i = 0; i < _layout.length; i++) {
                 if (_layout[i].betType == uint256(BetType.PlayerPair)) {
                     _safeTransfer(_layout[i].token, _layout[i].player, _layout[i].amount * 12);
@@ -243,19 +242,6 @@ contract Baccarat is IBaccarat, Ownable {
                 _cheques[_to][_token] += _amount;
             }
         }
-    }
-
-    // @dev check if the card is pair
-    // @param _cards the cards
-    function _hasPair(Card[] memory _cards) internal pure returns (bool) {
-        for (uint256 i = 0; i < _cards.length; i++) {
-            for (uint256 j = i + 1; j < _cards.length; j++) {
-                if (_cards[i].rank == _cards[j].rank) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     // @dev check whether can be settle, only can be settle when have banker and player
