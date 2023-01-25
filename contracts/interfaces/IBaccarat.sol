@@ -32,7 +32,7 @@ interface IBaccarat{
         bool superSix;
     }
 
-    event Action(address _token, uint256 _amount, uint256 _betType);
+    event Action(address indexed _token, uint256 _amount, uint256 indexed _betType);
     event Settle(ActionResult result, Card[] bankerHands, Card[] playerHands);
     event Shuffle(uint256 _cursor, uint256 _nonce);
     event Burning(uint256 _amount);
