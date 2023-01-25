@@ -64,6 +64,8 @@ contract Baccarat is IBaccarat, Ownable {
         if (!bet) {
             _layout.push(LayoutAction(msg.sender, _token, _amount, _betType));
         }
+
+        emit Action(_token, _amount, _betType);
     }
 
     // @notice play the game and settle the bet
@@ -90,6 +92,8 @@ contract Baccarat is IBaccarat, Ownable {
             // re-shuffle the Shoe after cursor
             _shuffle(seed);
         }
+
+        ActionResult memory result;
 
         // player hands
         _playerHands.push(_shoe[_cursor]);
@@ -155,6 +159,7 @@ contract Baccarat is IBaccarat, Ownable {
 
         // settle the bet
         if (playerHandsValue < bankerHandsValue) {
+            result.banker = true;
             for (uint256 i = 0; i < _layout.length; i++) {
                 // banker win, 1 : 0.95
                 if (_layout[i].betType == uint256(BetType.Banker)) {
@@ -162,6 +167,7 @@ contract Baccarat is IBaccarat, Ownable {
                 }
                 // banker win and super six, 1 : 20
                 if (_layout[i].betType == uint256(BetType.SuperSix) && bankerHandsValue == 6) {
+                    result.superSix = true;
                     if (_bankerHands.length == 3) {
                         _safeTransfer(_layout[i].token, _layout[i].player, _layout[i].amount * 21);
                     } else {
@@ -171,6 +177,7 @@ contract Baccarat is IBaccarat, Ownable {
             }
         } else if (playerHandsValue > bankerHandsValue) {
             // player win, 1 : 1
+            result.player = true;
             for (uint256 i = 0; i < _layout.length; i++) {
                 if (_layout[i].betType == uint256(BetType.Player)) {
                     _safeTransfer(_layout[i].token, _layout[i].player, _layout[i].amount * 2);
@@ -178,6 +185,7 @@ contract Baccarat is IBaccarat, Ownable {
             }
         } else {
             // tie, 1 : 8
+            result.tie = true;
             for (uint256 i = 0; i < _layout.length; i++) {
                 if (_layout[i].betType == uint256(BetType.Tie)) {
                     _safeTransfer(_layout[i].token, _layout[i].player, _layout[i].amount * 9);
@@ -187,6 +195,7 @@ contract Baccarat is IBaccarat, Ownable {
 
         // banker pair, 1 : 11
         if (_bankerHands[0].rank == _bankerHands[1].rank) {
+            result.bankerPair = true;
             for (uint256 i = 0; i < _layout.length; i++) {
                 if (_layout[i].betType == uint256(BetType.BankerPair)) {
                     _safeTransfer(_layout[i].token, _layout[i].player, _layout[i].amount * 12);
@@ -196,12 +205,15 @@ contract Baccarat is IBaccarat, Ownable {
 
         // player pair, 1 : 11
         if (_playerHands[0].rank == _playerHands[1].rank) {
+            result.playerPair = true;
             for (uint256 i = 0; i < _layout.length; i++) {
                 if (_layout[i].betType == uint256(BetType.PlayerPair)) {
                     _safeTransfer(_layout[i].token, _layout[i].player, _layout[i].amount * 12);
                 }
             }
         }
+
+        emit Settle(result, _bankerHands, _playerHands);
     }
 
     // @notice withdraw the token from contract
@@ -268,6 +280,8 @@ contract Baccarat is IBaccarat, Ownable {
         } else {
             _cursor += 2;
         }
+
+        emit Burning(point);
     }
 
     // @notice Use Knuth shuffle algorithm to shuffle the cards
@@ -276,16 +290,17 @@ contract Baccarat is IBaccarat, Ownable {
         _shuffle(_seed);
     }
 
-    function _shuffle(uint256 _seed) internal {
+    function _shuffle(uint256 _nonce) internal {
         uint256 n = _shoe.length;
         for (uint256 i = _cursor; i < n; i++) {
             // Pseudo random number between i and n-1
-            uint256 j = i + uint256(keccak256(abi.encodePacked(i, _seed))) % (n - i);
+            uint256 j = i + uint256(keccak256(abi.encodePacked(i, _nonce))) % (n - i);
             // swap i and j
             Card memory temp = _shoe[i];
             _shoe[i] = _shoe[j];
             _shoe[j] = temp;
         }
+        emit Shuffle(_cursor, _nonce);
     }
 
     // @notice get the card from the shoe
