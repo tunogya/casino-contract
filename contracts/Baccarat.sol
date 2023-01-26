@@ -83,15 +83,11 @@ contract Baccarat is IBaccarat, Ownable {
                 _cursor,
                 nonce
             )));
+        // if shoe is less than 6 cards, edit cursor
         if (_shoe.length - _cursor < 6) {
-            // shuffle
             _cursor = 0;
-            _shuffle(seed);
-            _burning();
-        } else {
-            // re-shuffle the Shoe after cursor
-            _shuffle(seed);
         }
+        _shuffle(seed);
 
         ActionResult memory result;
 
@@ -293,6 +289,10 @@ contract Baccarat is IBaccarat, Ownable {
     }
 
     function _shuffle(uint256 _nonce) internal {
+        if (_cursor == 0) {
+            _burning();
+        }
+
         uint256 n = _shoe.length;
         for (uint256 i = _cursor; i < n; i++) {
             // Pseudo random number between i and n-1
