@@ -214,6 +214,7 @@ contract Baccarat is IBaccarat, Ownable {
             }
         }
 
+        delete _layout;
         emit Settle(result, _bankerHands, _playerHands);
     }
 
