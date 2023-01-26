@@ -288,8 +288,8 @@ contract Baccarat is IBaccarat, Ownable {
 
     // @notice Use Knuth shuffle algorithm to shuffle the cards
     // @param _seed random seed, from business data and block data
-    function shuffle(uint256 _seed) external {
-        _shuffle(_seed);
+    function shuffle(uint256 _nonce) external {
+        _shuffle(_nonce);
     }
 
     function _shuffle(uint256 _nonce) internal {
