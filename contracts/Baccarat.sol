@@ -305,57 +305,14 @@ contract Baccarat is IBaccarat, Ownable {
         emit Shuffle(_cursor, _nonce);
     }
 
-    function uint2str(uint256 _i) internal pure returns (string memory _uintAsString) {
-        if (_i == 0) {
-            return "0";
-        }
-        uint256 j = _i;
-        uint256 len;
-        while (j != 0) {
-            len++;
-            j /= 10;
-        }
-        bytes memory bstr = new bytes(len);
-        uint256 k = len - 1;
-        while (_i != 0) {
-            bstr[k--] = bytes1(uint8(48 + _i % 10));
-            _i /= 10;
-        }
-        return string(bstr);
-    }
-
     // @notice get the card from the shoe
     // @param cursor start begin
     // @param count the number of card
-    function cardsOf(uint256 cursor, uint256 count) external view returns (CardView[] memory) {
-        require((cursor + count) <= _shoe.length, "not enough cards");
-        CardView[] memory cards = new CardView[](count);
-        for (uint256 i = 0; i < count; i++) {
-            uint8 suit = _shoe[cursor + i].suit;
-            uint8 rank = _shoe[cursor + i].rank;
-            string memory suitStr;
-            string memory rankStr;
-            if (suit == 0) {
-                suitStr = "Spade";
-            } else if (suit == 1) {
-                suitStr = "Heart";
-            } else if (suit == 2) {
-                suitStr = "Club";
-            } else if (suit == 3) {
-                suitStr = "Diamond";
-            }
-            if (rank == 1) {
-                rankStr = "A";
-            } else if (rank == 11) {
-                rankStr = "J";
-            } else if (rank == 12) {
-                rankStr = "Q";
-            } else if (rank == 13) {
-                rankStr = "K";
-            } else {
-                rankStr = uint2str(rank);
-            }
-            cards[i] = CardView(suitStr, rankStr);
+    function cardsOf(uint256 cursor_, uint256 count_) external view returns (Card[] memory) {
+        require((cursor_ + count_) <= _shoe.length, "not enough cards");
+        Card[] memory cards = new Card[](count_);
+        for (uint256 i = 0; i < count_; i++) {
+            cards[i] = _shoe[cursor_ + i];
         }
         return cards;
     }
@@ -366,7 +323,7 @@ contract Baccarat is IBaccarat, Ownable {
     }
 
     // @notice get current cursor
-    function readCursor() external view returns (uint256) {
+    function cursor() external view returns (uint256) {
         return _cursor;
     }
 

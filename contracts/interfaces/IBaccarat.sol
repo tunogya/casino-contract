@@ -16,11 +16,6 @@ interface IBaccarat{
         uint8 suit; // 1-4, 1 = spades, 2 = hearts, 3 = diamonds, 4 = clubs
     }
 
-    struct CardView {
-        string rank;
-        string suit;
-    }
-
     struct LayoutAction {
         address player;
         address token;
