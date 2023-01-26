@@ -165,12 +165,13 @@ contract Baccarat is IBaccarat, Ownable {
                 if (_layout[i].betType == uint256(BetType.Banker)) {
                     _safeTransfer(_layout[i].token, _layout[i].player, _layout[i].amount * 195 / 100);
                 }
-                // banker win and super six, 1 : 20
                 if (_layout[i].betType == uint256(BetType.SuperSix) && bankerHandsValue == 6) {
                     result.superSix = true;
                     if (_bankerHands.length == 3) {
+                        // banker win with 3 cards, super six, 1 : 20
                         _safeTransfer(_layout[i].token, _layout[i].player, _layout[i].amount * 21);
                     } else {
+                        // banker win with 2 cards, super six, 1 : 12
                         _safeTransfer(_layout[i].token, _layout[i].player, _layout[i].amount * 13);
                     }
                 }
