@@ -264,9 +264,9 @@ contract Baccarat is IBaccarat, Ownable {
         bool banker = false;
         bool player = false;
         for (uint256 i = 0; i < _layout.length; i++) {
-            if (_layout[i].betType == 0) {
+            if (_layout[i].betType == 1) {
                 banker = true;
-            } else if (_layout[i].betType == 1) {
+            } else if (_layout[i].betType == 2) {
                 player = true;
             }
         }
