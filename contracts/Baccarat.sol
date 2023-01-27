@@ -28,6 +28,12 @@ contract Baccarat is IBaccarat, Ownable {
                 _shoe.push(card);
             }
         }
+        // make sure shuffle cards first
+        uint256 _nonce = uint256(keccak256(abi.encodePacked(
+                block.timestamp,
+                block.difficulty
+            )));
+        _shuffle(_nonce);
     }
 
     // @notice player action
@@ -65,7 +71,7 @@ contract Baccarat is IBaccarat, Ownable {
             _layout.push(LayoutAction(msg.sender, _token, _amount, _betType));
         }
 
-        emit Action(_token, _amount, _betType);
+        emit Action(_cursor, msg.sender, _token, _amount, _betType);
     }
 
     // @notice play the game and settle the bet
@@ -77,7 +83,10 @@ contract Baccarat is IBaccarat, Ownable {
         delete _playerHands;
         delete _bankerHands;
 
-        uint256 seed = uint256(keccak256(abi.encodePacked(
+        // save current cursor, need to record cursor in event
+        uint256 currentCursor = _cursor;
+
+        nonce = uint256(keccak256(abi.encodePacked(
                 block.timestamp,
                 block.difficulty,
                 _cursor,
@@ -87,7 +96,7 @@ contract Baccarat is IBaccarat, Ownable {
         if (_shoe.length - _cursor < 6) {
             _cursor = 0;
         }
-        _shuffle(seed);
+        _shuffle(nonce);
 
         ActionResult memory result;
 
@@ -211,7 +220,8 @@ contract Baccarat is IBaccarat, Ownable {
         }
 
         delete _layout;
-        emit Settle(result, _bankerHands, _playerHands);
+
+        emit Settle(currentCursor, result, _bankerHands, _playerHands);
     }
 
     // @notice withdraw the token from contract
@@ -283,26 +293,32 @@ contract Baccarat is IBaccarat, Ownable {
     }
 
     // @notice Use Knuth shuffle algorithm to shuffle the cards
-    // @param _seed random seed, from business data and block data
+    // @param _nonce random number, from business data and block data
     function shuffle(uint256 _nonce) external {
         _shuffle(_nonce);
     }
 
     function _shuffle(uint256 _nonce) internal {
-        if (_cursor == 0) {
-            _burning();
-        }
-
         uint256 n = _shoe.length;
         for (uint256 i = _cursor; i < n; i++) {
+            _nonce = uint256(keccak256(abi.encodePacked(
+                    block.timestamp,
+                    block.difficulty,
+                    i,
+                    _nonce
+                )));
             // Pseudo random number between i and n-1
-            uint256 j = i + uint256(keccak256(abi.encodePacked(i, _nonce))) % (n - i);
+            uint256 j = i + _nonce % (n - i);
             // swap i and j
             Card memory temp = _shoe[i];
             _shoe[i] = _shoe[j];
             _shoe[j] = temp;
         }
         emit Shuffle(_cursor, _nonce);
+        // when cursor is 0, need to burn some cards
+        if (_cursor == 0) {
+            _burning();
+        }
     }
 
     // @notice get the card from the shoe

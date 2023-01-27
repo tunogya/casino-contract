@@ -32,8 +32,8 @@ interface IBaccarat{
         bool superSix;
     }
 
-    event Action(address indexed _token, uint256 _amount, uint256 indexed _betType);
-    event Settle(ActionResult result, Card[] bankerHands, Card[] playerHands);
+    event Action(uint256 indexed _cursor, address indexed _player, address _token, uint256 _amount, uint256 _betType);
+    event Settle(uint256 indexed _cursor, ActionResult result, Card[] bankerHands, Card[] playerHands);
     event Shuffle(uint256 _cursor, uint256 _nonce);
     event Burning(uint256 _amount);
 
