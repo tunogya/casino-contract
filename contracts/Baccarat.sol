@@ -28,12 +28,6 @@ contract Baccarat is IBaccarat, Ownable {
                 _shoe.push(card);
             }
         }
-        // make sure shuffle cards first
-        uint256 _nonce = uint256(keccak256(abi.encodePacked(
-                block.timestamp,
-                block.difficulty
-            )));
-        _shuffle(_nonce);
     }
 
     // @notice player action
@@ -41,6 +35,8 @@ contract Baccarat is IBaccarat, Ownable {
     // @param _amount betting amount
     // @param _betType betting type, 0 = banker, 1 = player, 2 = tie, 3 = banker pair, 4 = player pair, 5 = banker super six, 6 = player super six
     function action(address _token, uint256 _amount, uint256 _betType) payable external {
+        require(_cursor > 0, "Baccarat: game not started, need to shuffle first");
+
         uint256 cheques = _cheques[msg.sender][_token];
         if (_token == address(0)) {
             if (cheques >= _amount) {
