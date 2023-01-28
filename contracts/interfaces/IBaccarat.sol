@@ -18,7 +18,7 @@ interface IBaccarat{
         uint256 betType;
     }
 
-    struct SettleResult {
+    struct Result {
         uint16 cursor;      // 0 ..< 416
         uint8 bankerPoints; // 0 ..< 10
         uint8 playerPoints; // 0 ..< 10
@@ -31,7 +31,7 @@ interface IBaccarat{
     }
 
     event Action(address indexed _player, address indexed _token, uint256 _amount, uint256 _betType);
-    event Settle(SettleResult result);
+    event Settle(Result result);
     event Shuffle(uint256 _nonce);
     event Burning(uint256 _amount);
 

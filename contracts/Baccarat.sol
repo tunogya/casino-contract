@@ -28,7 +28,7 @@ contract Baccarat is IBaccarat, Ownable {
     mapping(address => mapping(address => uint256)) private _cheques;
 
     // @notice it saves the result of each settle, when cursor = 0, it will be cleared
-    SettleResult[] private _settleResults;
+    Result[] private _results;
 
     constructor() {
         for (uint256 i = 0; i < 8; i++) {
@@ -83,7 +83,7 @@ contract Baccarat is IBaccarat, Ownable {
     function settle(uint256 nonce) external {
         require(_checkAction(), "Baccarat: need both bet banker and player");
 
-        SettleResult memory result;
+        Result memory result;
         result.cursor = uint16(_cursor);
 
         nonce = uint256(keccak256(abi.encodePacked(
@@ -97,7 +97,7 @@ contract Baccarat is IBaccarat, Ownable {
             // set cursor to 0
             _cursor = 0;
             // delete _settleResults;
-            delete _settleResults;
+            delete _results;
         }
         // shuffle shoe
         _shuffle(nonce);
@@ -206,7 +206,7 @@ contract Baccarat is IBaccarat, Ownable {
         }
 
         // save the result
-        _settleResults.push(result);
+        _results.push(result);
 
         // clear the layout
         delete _layout;
@@ -318,16 +318,9 @@ contract Baccarat is IBaccarat, Ownable {
     }
 
     // @notice get the card from the shoe
-    // @param cursor start begin
-    // @param count the number of card
-    // @return the cards
-    function cardsOf(uint256 from_, uint256 count_) external view returns (uint8[] memory) {
-        require((from_ + count_) <= _shoe.length, "not enough cards");
-        uint8[] memory cards = new uint8[](count_);
-        for (uint256 i = 0; i < count_; i++) {
-            cards[i] = _shoe[from_ + i];
-        }
-        return cards;
+    // @return the card id
+    function shoe() external view returns (uint8[] memory) {
+        return _shoe;
     }
 
     // @notice get the actions at the current layout
@@ -354,13 +347,7 @@ contract Baccarat is IBaccarat, Ownable {
     // @param from_ start index, from 0
     // @param count_ the number of settle results
     // @return the settle results
-    function settleResultsOf(uint256 from_, uint256 count_) external view returns (SettleResult[] memory) {
-        require((from_ + count_) <= _settleResults.length, "not enough settle results");
-        SettleResult[] memory results = new SettleResult[](count_);
-        for (uint256 i = 0; i < count_; i++) {
-            results[i] = _settleResults[from_ + i];
-        }
-
-        return results;
+    function results() external view returns (Result[] memory) {
+        return _results;
     }
 }
