@@ -6,26 +6,34 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IBaccarat.sol";
 
 contract Baccarat is IBaccarat, Ownable {
-    Card[] private _shoe;
+    // @dev use 1...52 as card id to represent one suit of cards
+    // if x % 13 == 1, x represents A
+    // ...
+    // if x % 13 == 0, x represents K
+    // if x % 4 == 0, x represents spade
+    // if x % 4 == 1, x represents heart
+    // if x % 4 == 2, x represents club
+    // if x % 4 == 3, x represents diamond
+    uint8[] private _shoe;
+
+    // @dev cursor is an important flag in shoe, it represents the index of next card to distribute
+    // if index of shoe < cursor, this card will not be changed any more
+    // if index of shoe >= cursor, this card will be changed when shuffle
     uint256 private _cursor;
 
+    // it only saves the current betting layout, it will be cleared when settle
     LayoutAction[] private _layout;
 
     // player address => token address => amount
     // user can withdraw Cheques
     mapping(address => mapping(address => uint256)) private _cheques;
 
-    Card[] private _playerHands;
-    Card[] private _bankerHands;
+    SettleResult[] private _settleResults;
 
     constructor() {
-        // push 8 decks of cards into shoe
         for (uint256 i = 0; i < 8; i++) {
-            for (uint256 j = 0; j < 52; j++) {
-                Card memory card;
-                card.suit = uint8(j / 13) + 1;
-                card.rank = uint8(j % 13) + 1;
-                _shoe.push(card);
+            for (uint8 j = 1; j <= 52; j++) {
+                _shoe.push(j);
             }
         }
     }
@@ -67,7 +75,7 @@ contract Baccarat is IBaccarat, Ownable {
             _layout.push(LayoutAction(msg.sender, _token, _amount, _betType));
         }
 
-        emit Action(_cursor, msg.sender, _token, _amount, _betType);
+        emit Action(msg.sender, _token, _amount, _betType);
     }
 
     // @notice play the game and settle the bet
@@ -75,12 +83,8 @@ contract Baccarat is IBaccarat, Ownable {
     function settle(uint256 nonce) external {
         require(_checkAction(), "Baccarat: need both bet banker and player");
 
-        // delete playerHands and bankerHands
-        delete _playerHands;
-        delete _bankerHands;
-
-        // save current cursor, need to record cursor in event
-        uint256 currentCursor = _cursor;
+        SettleResult memory result;
+        result.cursor = uint16(_cursor);
 
         nonce = uint256(keccak256(abi.encodePacked(
                 block.timestamp,
@@ -88,87 +92,77 @@ contract Baccarat is IBaccarat, Ownable {
                 _cursor,
                 nonce
             )));
-        // if shoe is less than 6 cards, edit cursor
+        // if shoe is less than 6 cards, can not play
         if (_shoe.length - _cursor < 6) {
+            // set cursor to 0
             _cursor = 0;
+            // delete _settleResults;
+            delete _settleResults;
         }
+        // shuffle shoe
         _shuffle(nonce);
 
-        ActionResult memory result;
-
         // player hands
-        _playerHands.push(_shoe[_cursor]);
-        _bankerHands.push(_shoe[_cursor + 1]);
-        _playerHands.push(_shoe[_cursor + 2]);
-        _bankerHands.push(_shoe[_cursor + 3]);
+        result.playerHands1 = _shoe[_cursor];
+        result.bankerHands1 = _shoe[_cursor + 1];
+        result.playerHands2 = _shoe[_cursor + 2];
+        result.bankerHands2 = _shoe[_cursor + 3];
         _cursor += 4;
 
         // calculate hands value
-        uint256 playerHandsValue = _getPoint(_getPoint(_playerHands[0].rank) + _getPoint(_playerHands[1].rank));
-        uint256 bankerHandsValue = _getPoint(_getPoint(_bankerHands[0].rank) + _getPoint(_bankerHands[1].rank));
+        result.bankerPoints = (_getPoint(result.bankerHands1) + _getPoint(result.bankerHands2)) % 10;
+        result.playerPoints = (_getPoint(result.playerHands1) + _getPoint(result.playerHands2)) % 10;
 
         // if not Natural
-        if (playerHandsValue < 8 && bankerHandsValue < 8) {
+        if (result.playerPoints < 8 && result.bankerPoints < 8) {
             // if player hands value is less than 6, draw a third card
-            if (playerHandsValue < 6) {
-                _playerHands.push(_shoe[_cursor]);
-                playerHandsValue = _getPoint(playerHandsValue + _getPoint(_playerHands[2].rank));
+            if (result.playerPoints < 6) {
+                result.playerHands3 = _shoe[_cursor];
+                result.playerPoints = (result.playerPoints + _getPoint(result.playerHands3)) % 10;
                 _cursor += 1;
             }
 
             // if player no need draw a third card, banker < 6, banker need draw a third card
-            if (_playerHands.length == 2 && bankerHandsValue < 6) {
-                // draw
-                _bankerHands.push(_shoe[_cursor]);
-                bankerHandsValue = _getPoint(bankerHandsValue + _getPoint(_bankerHands[2].rank));
+            if (result.playerHands3 == 0 && result.bankerPoints < 6) {
+                result.bankerHands3 = _shoe[_cursor];
+                result.bankerPoints = (result.bankerPoints + _getPoint(result.bankerHands3)) % 10;
                 _cursor += 1;
             }
 
-            if (_playerHands.length == 3) {
-                if (bankerHandsValue <= 2) {
-                    // draw
-                    _bankerHands.push(_shoe[_cursor]);
-                    bankerHandsValue = _getPoint(bankerHandsValue + _getPoint(_bankerHands[2].rank));
+            if (result.playerHands3 > 0) {
+                if (result.bankerPoints <= 2) {
+                    result.bankerHands3 = _shoe[_cursor];
+                    result.bankerPoints = (result.bankerPoints + _getPoint(result.bankerHands3)) % 10;
                     _cursor += 1;
-                }
-                if (bankerHandsValue == 3 && _getPoint(_playerHands[2].rank) != 8) {
-                    // draw
-                    _bankerHands.push(_shoe[_cursor]);
-                    bankerHandsValue = _getPoint(bankerHandsValue + _getPoint(_bankerHands[2].rank));
+                } else if (result.bankerPoints == 3 && _getPoint(result.playerHands3) != 8) {
+                    result.bankerHands3 = _shoe[_cursor];
+                    result.bankerPoints = (result.bankerPoints + _getPoint(result.bankerHands3)) % 10;
                     _cursor += 1;
-                }
-                if (bankerHandsValue == 4 && _getPoint(_playerHands[2].rank) >= 2 && _getPoint(_playerHands[2].rank) <= 7) {
-                    // draw
-                    _bankerHands.push(_shoe[_cursor]);
-                    bankerHandsValue = _getPoint(bankerHandsValue + _getPoint(_bankerHands[2].rank));
+                } else if (result.bankerPoints == 4 && _getPoint(result.playerHands3) >= 2 && _getPoint(result.playerHands3) <= 7) {
+                    result.bankerHands3 = _shoe[_cursor];
+                    result.bankerPoints = (result.bankerPoints + _getPoint(result.bankerHands3)) % 10;
                     _cursor += 1;
-                }
-                if (bankerHandsValue == 5 && _getPoint(_playerHands[2].rank) >= 4 && _getPoint(_playerHands[2].rank) <= 7) {
-                    // draw
-                    _bankerHands.push(_shoe[_cursor]);
-                    bankerHandsValue = _getPoint(bankerHandsValue + _getPoint(_bankerHands[2].rank));
+                } else if (result.bankerPoints == 5 && _getPoint(result.playerHands3) >= 4 && _getPoint(result.playerHands3) <= 7) {
+                    result.bankerHands3 = _shoe[_cursor];
+                    result.bankerPoints = (result.bankerPoints + _getPoint(result.bankerHands3)) % 10;
                     _cursor += 1;
-                }
-                if (bankerHandsValue == 6 && _getPoint(_playerHands[2].rank) >= 6 && _getPoint(_playerHands[2].rank) <= 7) {
-                    // draw
-                    _bankerHands.push(_shoe[_cursor]);
-                    bankerHandsValue = _getPoint(bankerHandsValue + _getPoint(_bankerHands[2].rank));
+                } else if (result.bankerPoints == 6 && _getPoint(result.playerHands3) >= 6 && _getPoint(result.playerHands3) <= 7) {
+                    result.bankerHands3 = _shoe[_cursor];
+                    result.bankerPoints = (result.bankerPoints + _getPoint(result.bankerHands3)) % 10;
                     _cursor += 1;
                 }
             }
         }
 
         // settle the bet
-        if (playerHandsValue < bankerHandsValue) {
-            result.banker = true;
+        if (result.playerPoints < result.bankerPoints) {
             for (uint256 i = 0; i < _layout.length; i++) {
                 // banker win, 1 : 0.95
                 if (_layout[i].betType == uint256(BetType.Banker)) {
                     _safeTransfer(_layout[i].token, _layout[i].player, _layout[i].amount * 195 / 100);
                 }
-                if (_layout[i].betType == uint256(BetType.SuperSix) && bankerHandsValue == 6) {
-                    result.superSix = true;
-                    if (_bankerHands.length == 3) {
+                if (_layout[i].betType == uint256(BetType.SuperSix) && result.bankerPoints == 6) {
+                    if (result.bankerHands3 > 0) {
                         // banker win with 3 cards, super six, 1 : 20
                         _safeTransfer(_layout[i].token, _layout[i].player, _layout[i].amount * 21);
                     } else {
@@ -177,9 +171,8 @@ contract Baccarat is IBaccarat, Ownable {
                     }
                 }
             }
-        } else if (playerHandsValue > bankerHandsValue) {
+        } else if (result.playerPoints > result.bankerPoints) {
             // player win, 1 : 1
-            result.player = true;
             for (uint256 i = 0; i < _layout.length; i++) {
                 if (_layout[i].betType == uint256(BetType.Player)) {
                     _safeTransfer(_layout[i].token, _layout[i].player, _layout[i].amount * 2);
@@ -187,7 +180,6 @@ contract Baccarat is IBaccarat, Ownable {
             }
         } else {
             // tie, 1 : 8
-            result.tie = true;
             for (uint256 i = 0; i < _layout.length; i++) {
                 if (_layout[i].betType == uint256(BetType.Tie)) {
                     _safeTransfer(_layout[i].token, _layout[i].player, _layout[i].amount * 9);
@@ -196,8 +188,7 @@ contract Baccarat is IBaccarat, Ownable {
         }
 
         // banker pair, 1 : 11
-        if (_bankerHands[0].rank == _bankerHands[1].rank) {
-            result.bankerPair = true;
+        if (result.bankerHands1 % 13 == result.bankerHands2 % 13) {
             for (uint256 i = 0; i < _layout.length; i++) {
                 if (_layout[i].betType == uint256(BetType.BankerPair)) {
                     _safeTransfer(_layout[i].token, _layout[i].player, _layout[i].amount * 12);
@@ -206,8 +197,7 @@ contract Baccarat is IBaccarat, Ownable {
         }
 
         // player pair, 1 : 11
-        if (_playerHands[0].rank == _playerHands[1].rank) {
-            result.playerPair = true;
+        if (result.playerHands1 % 13 == result.playerHands2 % 13) {
             for (uint256 i = 0; i < _layout.length; i++) {
                 if (_layout[i].betType == uint256(BetType.PlayerPair)) {
                     _safeTransfer(_layout[i].token, _layout[i].player, _layout[i].amount * 12);
@@ -215,9 +205,13 @@ contract Baccarat is IBaccarat, Ownable {
             }
         }
 
+        // save the result
+        _settleResults.push(result);
+
+        // clear the layout
         delete _layout;
 
-        emit Settle(currentCursor, result, _bankerHands, _playerHands);
+        emit Settle(result);
     }
 
     // @notice withdraw the token from contract
@@ -235,12 +229,13 @@ contract Baccarat is IBaccarat, Ownable {
 
     // @notice get the point of the card
     // @param _rank the rank of the card
-    function _getPoint(uint256 _rank) internal pure returns (uint256) {
-        if (_rank >= 10) {
+    function _getPoint(uint8 cardId) internal pure returns (uint8) {
+        uint8 rank = cardId % 13;
+        // 10, J, Q, K
+        if (rank == 0 || rank >= 10) {
             return 0;
-        } else {
-            return _rank;
         }
+        return rank;
     }
 
     // @dev transfer the token, or record the cheque
@@ -278,7 +273,7 @@ contract Baccarat is IBaccarat, Ownable {
 
     // burn some cards after init shuffle
     function _burning() internal {
-        uint256 point = _getPoint(_shoe[_cursor].rank);
+        uint8 point = _getPoint(_shoe[_cursor]);
         if (point <= 7) {
             _cursor += 3;
         } else {
@@ -296,7 +291,7 @@ contract Baccarat is IBaccarat, Ownable {
 
     function _shuffle(uint256 _nonce) internal {
         uint256 n = _shoe.length;
-        for (uint256 i = _cursor; i < n; i++) {
+        for (uint256 i = uint256(_cursor); i < n; i++) {
             _nonce = uint256(keccak256(abi.encodePacked(
                     block.timestamp,
                     block.difficulty,
@@ -306,11 +301,11 @@ contract Baccarat is IBaccarat, Ownable {
             // Pseudo random number between i and n-1
             uint256 j = i + _nonce % (n - i);
             // swap i and j
-            Card memory temp = _shoe[i];
+            uint8 temp = _shoe[i];
             _shoe[i] = _shoe[j];
             _shoe[j] = temp;
         }
-        emit Shuffle(_cursor, _nonce);
+        emit Shuffle(_nonce);
         // when cursor is 0, need to burn some cards
         if (_cursor == 0) {
             _burning();
@@ -320,11 +315,11 @@ contract Baccarat is IBaccarat, Ownable {
     // @notice get the card from the shoe
     // @param cursor start begin
     // @param count the number of card
-    function cardsOf(uint256 cursor_, uint256 count_) external view returns (Card[] memory) {
-        require((cursor_ + count_) <= _shoe.length, "not enough cards");
-        Card[] memory cards = new Card[](count_);
+    function cardsOf(uint256 from_, uint256 count_) external view returns (uint8[] memory) {
+        require((from_ + count_) <= _shoe.length, "not enough cards");
+        uint8[] memory cards = new uint8[](count_);
         for (uint256 i = 0; i < count_; i++) {
-            cards[i] = _shoe[cursor_ + i];
+            cards[i] = _shoe[from_ + i];
         }
         return cards;
     }
@@ -342,5 +337,18 @@ contract Baccarat is IBaccarat, Ownable {
     // @notice get cheque balance of the user
     function chequesOf(address _player, address _token) external view returns (uint256) {
         return _cheques[_player][_token];
+    }
+
+    // @notice get the settle results
+    // @param from_ start index, from 0
+    // @param count_ the number of settle results
+    function settleResultsOf(uint256 from_, uint256 count_) external view returns (SettleResult[] memory) {
+        require((from_ + count_) <= _settleResults.length, "not enough settle results");
+        SettleResult[] memory results = new SettleResult[](count_);
+        for (uint256 i = 0; i < count_; i++) {
+            results[i] = _settleResults[from_ + i];
+        }
+
+        return results;
     }
 }

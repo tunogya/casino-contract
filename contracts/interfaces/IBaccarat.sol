@@ -11,11 +11,6 @@ interface IBaccarat{
         SuperSix
     }
 
-    struct Card {
-        uint8 rank; // 1-13, 1 is Ace, 11 is Jack, 12 is Queen, 13 is King
-        uint8 suit; // 1-4, 1 = spades, 2 = hearts, 3 = diamonds, 4 = clubs
-    }
-
     struct LayoutAction {
         address player;
         address token;
@@ -23,18 +18,21 @@ interface IBaccarat{
         uint256 betType;
     }
 
-    struct ActionResult {
-        bool banker;
-        bool player;
-        bool tie;
-        bool bankerPair;
-        bool playerPair;
-        bool superSix;
+    struct SettleResult {
+        uint16 cursor;      // 0 ..< 416
+        uint8 bankerPoints; // 0 ..< 10
+        uint8 playerPoints; // 0 ..< 10
+        uint8 bankerHands1; // 1 ... 52, 0 = no card
+        uint8 bankerHands2; // 1 ... 52, 0 = no card
+        uint8 bankerHands3; // 1 ... 52, 0 = no card
+        uint8 playerHands1; // 1 ... 52, 0 = no card
+        uint8 playerHands2; // 1 ... 52, 0 = no card
+        uint8 playerHands3; // 1 ... 52, 0 = no card
     }
 
-    event Action(uint256 indexed _cursor, address indexed _player, address _token, uint256 _amount, uint256 _betType);
-    event Settle(uint256 indexed _cursor, ActionResult result, Card[] bankerHands, Card[] playerHands);
-    event Shuffle(uint256 _cursor, uint256 _nonce);
+    event Action(address indexed _player, address indexed _token, uint256 _amount, uint256 _betType);
+    event Settle(SettleResult result);
+    event Shuffle(uint256 _nonce);
     event Burning(uint256 _amount);
 
     // Returns the shuffled deck of cards
@@ -47,5 +45,5 @@ interface IBaccarat{
     function action(address _token, uint256 _amount, uint256 _betType) payable external;
 
     // @notice play the game and settle the bet
-    function settle(uint256 nonce) external;
+    function settle(uint256 _nonce) external;
 }
