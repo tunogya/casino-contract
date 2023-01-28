@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IBaccarat.sol";
 
 contract Baccarat is IBaccarat, Ownable {
-    // @dev use 1...52 as card id to represent one suit of cards
+    // @notice use 1...52 as card id to represent one suit of cards
     // if x % 13 == 1, x represents A
     // ...
     // if x % 13 == 0, x represents K
@@ -16,18 +16,18 @@ contract Baccarat is IBaccarat, Ownable {
     // if x % 4 == 3, x represents diamond
     uint8[] private _shoe;
 
-    // @dev cursor is an important flag in shoe, it represents the index of next card to distribute
+    // @notice cursor is an important flag in shoe, it represents the index of next card to distribute
     // if index of shoe < cursor, this card will not be changed any more
     // if index of shoe >= cursor, this card will be changed when shuffle
     uint256 private _cursor;
 
-    // it only saves the current betting layout, it will be cleared when settle
+    // @notice it only saves the current betting layout, it will be cleared when settle
     LayoutAction[] private _layout;
 
-    // player address => token address => amount
-    // user can withdraw Cheques
+    // @notice player address => token address => amount
     mapping(address => mapping(address => uint256)) private _cheques;
 
+    // @notice it saves the result of each settle, when cursor = 0, it will be cleared
     SettleResult[] private _settleResults;
 
     constructor() {
@@ -223,6 +223,9 @@ contract Baccarat is IBaccarat, Ownable {
         _safeTransfer(_token, msg.sender, _amount);
     }
 
+    // @notice withdraw the token from contract, only owner can call this function
+    // @param _token the token address
+    // @param _amount the amount of token
     function withdrawOnlyOwner(address _token, uint256 _amount) external onlyOwner {
         _safeTransfer(_token, msg.sender, _amount);
     }
@@ -238,7 +241,8 @@ contract Baccarat is IBaccarat, Ownable {
         return rank;
     }
 
-    // @dev transfer the token, or record the cheque
+    // @notice transfer the token, or record the cheque
+    // if the token is address 0, it means the token is ETH
     function _safeTransfer(address _token, address _to, uint256 _amount) internal {
         if (_token == address(0)) {
             if (address(this).balance >= _amount) {
@@ -255,7 +259,8 @@ contract Baccarat is IBaccarat, Ownable {
         }
     }
 
-    // @dev check whether can be settle, only can be settle when have banker and player
+    // @notice check whether can be settle, only can be settle when have banker and player
+    // @return true if can be settle
     function _checkAction() internal view returns (bool) {
         // need both have banker and player betting
         bool banker = false;
@@ -271,7 +276,7 @@ contract Baccarat is IBaccarat, Ownable {
         return banker && player;
     }
 
-    // burn some cards after init shuffle
+    // @notice burn some cards after init shuffle
     function _burning() internal {
         uint8 point = _getPoint(_shoe[_cursor]);
         if (point <= 7) {
@@ -283,12 +288,12 @@ contract Baccarat is IBaccarat, Ownable {
         emit Burning(point);
     }
 
-    // @notice Use Knuth shuffle algorithm to shuffle the cards
-    // @param _nonce random number, from business data and block data
     function shuffle(uint256 _nonce) external {
         _shuffle(_nonce);
     }
 
+    // @notice Use Knuth shuffle algorithm to shuffle the cards
+    // @param _nonce random number, from business data and block data
     function _shuffle(uint256 _nonce) internal {
         uint256 n = _shoe.length;
         for (uint256 i = uint256(_cursor); i < n; i++) {
@@ -315,6 +320,7 @@ contract Baccarat is IBaccarat, Ownable {
     // @notice get the card from the shoe
     // @param cursor start begin
     // @param count the number of card
+    // @return the cards
     function cardsOf(uint256 from_, uint256 count_) external view returns (uint8[] memory) {
         require((from_ + count_) <= _shoe.length, "not enough cards");
         uint8[] memory cards = new uint8[](count_);
@@ -325,16 +331,21 @@ contract Baccarat is IBaccarat, Ownable {
     }
 
     // @notice get the actions at the current layout
+    // @return the actions
     function layout() external view returns (LayoutAction[] memory) {
         return _layout;
     }
 
-    // @notice get current cursor
+    // @notice get current cursor of shoe
+    // @return the cursor
     function cursor() external view returns (uint256) {
         return _cursor;
     }
 
     // @notice get cheque balance of the user
+    // @param _player the player address
+    // @param _token the token address
+    // @return the cheque balance
     function chequesOf(address _player, address _token) external view returns (uint256) {
         return _cheques[_player][_token];
     }
@@ -342,6 +353,7 @@ contract Baccarat is IBaccarat, Ownable {
     // @notice get the settle results
     // @param from_ start index, from 0
     // @param count_ the number of settle results
+    // @return the settle results
     function settleResultsOf(uint256 from_, uint256 count_) external view returns (SettleResult[] memory) {
         require((from_ + count_) <= _settleResults.length, "not enough settle results");
         SettleResult[] memory results = new SettleResult[](count_);
