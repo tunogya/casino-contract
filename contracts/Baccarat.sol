@@ -51,7 +51,7 @@ contract Baccarat is IBaccarat, Ownable {
                 _cheques[msg.sender][_token] = cheques - _amount;
             } else {
                 _cheques[msg.sender][_token] = 0;
-                require(msg.value == _amount - cheques, "Baccarat: insufficient ether");
+                require(msg.value >= _amount - cheques, "Baccarat: insufficient ether");
             }
         } else {
             if (cheques >= _amount) {
