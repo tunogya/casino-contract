@@ -99,8 +99,8 @@ contract Baccarat is IBaccarat, Ownable {
             // delete _settleResults;
             delete _results;
         }
-        // shuffle shoe
-        _shuffle(nonce);
+        // shuffle 6 cards
+        _shuffle(nonce, _cursor + 6);
 
         // player hands
         result.playerHands1 = _shoe[_cursor];
@@ -295,16 +295,22 @@ contract Baccarat is IBaccarat, Ownable {
     // @notice Use Knuth shuffle algorithm to shuffle the cards
     // @param _nonce random number, from business data and block data
     function _shuffle(uint256 _nonce) internal {
-        uint256 n = _shoe.length;
-        for (uint256 i = uint256(_cursor); i < n; i++) {
+        _shuffle(_nonce, _shoe.length);
+    }
+
+    // @notice Use Knuth shuffle algorithm to shuffle the cards
+    // @param _nonce random number, from business data and block data
+    // @param _to shuffle cards between _cursor to _to, _to must <= _shoe.length
+    function _shuffle(uint256 _nonce, uint256 _to) internal {
+        for (uint256 i = _cursor; i < _to; i++) {
             _nonce = uint256(keccak256(abi.encodePacked(
                     block.timestamp,
                     block.difficulty,
                     i,
                     _nonce
                 )));
-            // Pseudo random number between i and n-1
-            uint256 j = i + _nonce % (n - i);
+            // Pseudo random number between i and _shoe.length - 1
+            uint256 j = i + _nonce % (_shoe.length - i);
             // swap i and j
             uint8 temp = _shoe[i];
             _shoe[i] = _shoe[j];
