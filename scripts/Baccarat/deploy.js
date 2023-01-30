@@ -1,4 +1,4 @@
-const { ethers } = require("hardhat");
+const { ethers, upgrades } = require("hardhat");
 
 async function main() {
   const chainId = (await ethers.provider.getNetwork()).chainId;
@@ -7,9 +7,11 @@ async function main() {
   console.log("Gas price:", gas.toString());
   const Baccarat = await ethers.getContractFactory("Baccarat");
   console.log("Deploying Baccarat...");
-  const baccarat = await Baccarat.deploy();
+  const baccarat = await upgrades.deployProxy(Baccarat, {
+    initializer: "initialize",
+  });
   await baccarat.deployed();
-  console.log("Baccarat deployed to:", baccarat.address);
+  console.log("Baccarat proxy deployed to:", baccarat.address);
 }
 
 main();

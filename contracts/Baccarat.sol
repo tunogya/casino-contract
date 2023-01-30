@@ -2,10 +2,12 @@
 pragma solidity 0.8.9;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBaccarat.sol";
 
-contract Baccarat is IBaccarat, Ownable {
+contract Baccarat is Initializable, OwnableUpgradeable, UUPSUpgradeable, IBaccarat {
     // @notice use 1...52 as card id to represent one suit of cards
     // if x % 13 == 1, x represents A
     // ...
@@ -30,12 +32,19 @@ contract Baccarat is IBaccarat, Ownable {
     // @notice it saves the result of each settle, when cursor = 0, it will be cleared
     Result[] private _results;
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
+        _disableInitializers();
+    }
+
+    function initialize() initializer public {
         for (uint256 i = 0; i < 8; i++) {
             for (uint8 j = 1; j <= 52; j++) {
                 _shoe.push(j);
             }
         }
+        __Ownable_init();
+        __UUPSUpgradeable_init();
     }
 
     // @notice player action
@@ -356,4 +365,10 @@ contract Baccarat is IBaccarat, Ownable {
     function results() external view returns (Result[] memory) {
         return _results;
     }
+
+    function _authorizeUpgrade(address newImplementation)
+    internal
+    onlyOwner
+    override
+    {}
 }
