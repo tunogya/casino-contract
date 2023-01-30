@@ -90,7 +90,7 @@ contract Baccarat is Initializable, OwnableUpgradeable, UUPSUpgradeable, IBaccar
     // @notice play the game and settle the bet
     // @param nonce random number, anyone can call this function
     function settle(uint256 nonce) external {
-        require(_checkAction(), "Baccarat: need both bet banker and player");
+        require(_layout.length >= 2, "Baccarat: need 2 players at least");
 
         Result memory result;
         result.cursor = uint16(_cursor);
@@ -266,23 +266,6 @@ contract Baccarat is Initializable, OwnableUpgradeable, UUPSUpgradeable, IBaccar
                 _cheques[_to][_token] += _amount;
             }
         }
-    }
-
-    // @notice check whether can be settle, only can be settle when have banker and player
-    // @return true if can be settle
-    function _checkAction() internal view returns (bool) {
-        // need both have banker and player betting
-        bool banker = false;
-        bool player = false;
-        for (uint256 i = 0; i < _layout.length; i++) {
-            if (_layout[i].betType == uint256(BetType.Banker)) {
-                banker = true;
-            } else if (_layout[i].betType == uint256(BetType.Player)) {
-                player = true;
-            }
-        }
-
-        return banker && player;
     }
 
     // @notice burn some cards after init shuffle
